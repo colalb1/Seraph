@@ -275,7 +275,7 @@ namespace seraph {
                     std::optional<T> result(std::move(*(next->value)));
                     clear_local_hazard_pointers();
 
-                    retire_list_.push_back(node);
+                    retire_list_.push_back(head);
 
                     if (retire_list_.size() >= k_retire_scan_threshold) {
                         scan();
@@ -370,7 +370,7 @@ namespace seraph {
         }
 
         [[nodiscard]] auto size() const noexcept -> std::size_t {
-            return size_.load(std::memory_order_acq_rel);
+            return size_.load(std::memory_order_seq_cst);
         }
     };
 
