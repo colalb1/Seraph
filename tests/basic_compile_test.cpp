@@ -28,7 +28,7 @@ int main() {
         return 1;
     }
 
-    seraph::Queue<int> queue;
+    seraph::queue<int> queue;
     if (!queue.empty()) {
         return 1;
     }
