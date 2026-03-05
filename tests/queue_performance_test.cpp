@@ -1,7 +1,6 @@
 #include "seraph/queue.hpp"
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <barrier>
 #include <chrono>
@@ -644,13 +643,10 @@ namespace {
         if (impl == "queue") {
             return "#2a9d8f";
         }
-        if (impl == "STLQueue") {
-            return "#264653";
-        }
         if (impl == "BoostQueue") {
             return "#e76f51";
         }
-        return "#e76f51";
+        return "#264653";
     }
 
     auto format_metric(double value) -> std::string {
@@ -678,7 +674,7 @@ namespace {
             }
         }
 
-        std::vector<std::string> impls = {"queue", "STLQueue"};
+        std::vector<std::string> impls = {"queue"};
 #if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
         impls.push_back("BoostQueue");
 #endif
@@ -1138,37 +1134,18 @@ namespace {
             mt_ops[aggregate.operation][aggregate.implementation] = aggregate.avg_ops_per_second;
         }
 
-        std::cout << "Multithread throughput ratio (impl / STLQueue):\n";
+        std::cout << "Multithread throughput ratio (queue / BoostQueue):\n";
         for (const auto& [operation, by_impl] : mt_ops) {
-            const auto stl_it = by_impl.find("STLQueue");
-            if (stl_it == by_impl.end() || stl_it->second <= 0.0) {
+            const auto queue_it = by_impl.find("queue");
+            const auto boost_it = by_impl.find("BoostQueue");
+            if (queue_it == by_impl.end() || boost_it == by_impl.end() || boost_it->second <= 0.0) {
                 continue;
             }
 
-            const std::array<std::string_view, 2> impls = {
-                    "queue",
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
-                    "BoostQueue",
-#else
-                    "",
-#endif
-            };
-
-            for (const auto impl_name : impls) {
-                if (impl_name.empty()) {
-                    continue;
-                }
-
-                const auto impl_it = by_impl.find(std::string(impl_name));
-                if (impl_it == by_impl.end()) {
-                    continue;
-                }
-
-                const double ratio = impl_it->second / stl_it->second;
-                std::cout << "  " << operation << ": " << impl_name << " " << format_ratio(ratio)
-                          << "x (" << format_metric(impl_it->second) << " ops/sec vs STLQueue "
-                          << format_metric(stl_it->second) << " ops/sec)\n";
-            }
+            const double ratio = queue_it->second / boost_it->second;
+            std::cout << "  " << operation << ": " << format_ratio(ratio) << "x (queue "
+                      << format_metric(queue_it->second) << " ops/sec vs BoostQueue "
+                      << format_metric(boost_it->second) << " ops/sec)\n";
         }
     }
 
@@ -1213,51 +1190,28 @@ int main(int argc, char** argv) {
         );
     };
 
-    using SeraphQueue = seraph::queue<int>;
-    using STL = STLQueueAdapter;
-    using STLContention = ThreadSafeSTLQueueAdapter;
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
-    using BoostQueue = BoostLockfreeQueueAdapter;
+#if !SERAPH_HAS_BOOST_LOCKFREE_QUEUE
+    std::cerr << "Boost lockfree queue headers not found; cannot run Boost-only comparison.\n";
+    return 3;
 #endif
+
+    using SeraphQueue = seraph::queue<int>;
+    using BoostQueue = BoostLockfreeQueueAdapter;
 
     append_samples(bench_push_copy<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_push_copy<STL>("STLQueue", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_push_copy<BoostQueue>("BoostQueue", iterations, repeats));
-#endif
 
     append_samples(bench_push_move<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_push_move<STL>("STLQueue", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_push_move<BoostQueue>("BoostQueue", iterations, repeats));
-#endif
 
     append_samples(bench_emplace<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_emplace<STL>("STLQueue", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_emplace<BoostQueue>("BoostQueue", iterations, repeats));
-#endif
 
     append_samples(bench_pop<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_pop<STL>("STLQueue", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_pop<BoostQueue>("BoostQueue", iterations, repeats));
-#endif
-
-    append_samples(bench_size<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_size<STL>("STLQueue", iterations, repeats));
 
     append_samples(bench_empty<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_empty<STL>("STLQueue", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_empty<BoostQueue>("BoostQueue", iterations, repeats));
-#endif
-
-    append_samples(bench_front<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_front<STL>("STLQueue", iterations, repeats));
-
-    append_samples(bench_back<SeraphQueue>("queue", iterations, repeats));
-    append_samples(bench_back<STL>("STLQueue", iterations, repeats));
 
     // queue pop/front/back can consume two hazard slots per thread; keep thread counts
     // bounded for reliable runs across debug/release builds.
@@ -1272,14 +1226,6 @@ int main(int argc, char** argv) {
                     contention_ops_per_thread,
                     repeats
             ));
-            append_samples(bench_contention_mix<STLContention>(
-                    "STLQueue",
-                    thread_count,
-                    push_percent,
-                    contention_ops_per_thread,
-                    repeats
-            ));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
             append_samples(bench_contention_mix<BoostQueue>(
                     "BoostQueue",
                     thread_count,
@@ -1287,7 +1233,6 @@ int main(int argc, char** argv) {
                     contention_ops_per_thread,
                     repeats
             ));
-#endif
         }
     }
 
@@ -1298,20 +1243,12 @@ int main(int argc, char** argv) {
                 specialized_ops_per_thread,
                 repeats
         ));
-        append_samples(bench_mt_push_only<STLContention>(
-                "STLQueue",
-                thread_count,
-                specialized_ops_per_thread,
-                repeats
-        ));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
         append_samples(bench_mt_push_only<BoostQueue>(
                 "BoostQueue",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
-#endif
 
         append_samples(bench_mt_pop_only<SeraphQueue>(
                 "queue",
@@ -1319,20 +1256,12 @@ int main(int argc, char** argv) {
                 specialized_ops_per_thread,
                 repeats
         ));
-        append_samples(bench_mt_pop_only<STLContention>(
-                "STLQueue",
-                thread_count,
-                specialized_ops_per_thread,
-                repeats
-        ));
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
         append_samples(bench_mt_pop_only<BoostQueue>(
                 "BoostQueue",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
-#endif
     }
 
     const auto aggregates = build_aggregates(samples);
@@ -1360,9 +1289,6 @@ int main(int argc, char** argv) {
     std::cout << "Graph (ops/sec, averaged): " << ops_svg_path << "\n";
     std::cout << "Graph (contention ops/sec, averaged): " << contention_svg_path << "\n";
     std::cout << "Graph (specialized mt ops/sec, averaged): " << specialized_mt_svg_path << "\n";
-#if !SERAPH_HAS_BOOST_LOCKFREE_QUEUE
-    std::cout << "Boost lockfree queue headers not found; BoostQueue comparison skipped.\n";
-#endif
     std::cout << "Sink: " << g_sink << "\n";
 
     return 0;

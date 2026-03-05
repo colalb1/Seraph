@@ -605,13 +605,10 @@ namespace {
         if (impl == "stack") {
             return "#2a9d8f";
         }
-        if (impl == "STLStack") {
-            return "#264653";
-        }
         if (impl == "BoostStack") {
             return "#e76f51";
         }
-        return "#e76f51";
+        return "#264653";
     }
 
     std::string format_metric(double value) {
@@ -633,7 +630,7 @@ namespace {
             }
         }
 
-        std::vector<std::string> impls = {"stack", "STLStack"};
+        std::vector<std::string> impls = {"stack"};
 #if SERAPH_HAS_BOOST_LOCKFREE_STACK
         impls.push_back("BoostStack");
 #endif
@@ -1123,49 +1120,28 @@ int main(int argc, char** argv) {
         );
     };
 
-    using SeraphStack = seraph::stack<int>;
-    using STL = STLStackAdapter;
-    using STLContention = ThreadSafeSTLStackAdapter;
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
-    using BoostStack = BoostLockfreeStackAdapter;
+#if !SERAPH_HAS_BOOST_LOCKFREE_STACK
+    std::cerr << "Boost lockfree stack headers not found; cannot run Boost-only comparison.\n";
+    return 3;
 #endif
+
+    using SeraphStack = seraph::stack<int>;
+    using BoostStack = BoostLockfreeStackAdapter;
 
     append_samples(bench_push_copy<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_push_copy<STL>("STLStack", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
     append_samples(bench_push_copy<BoostStack>("BoostStack", iterations, repeats));
-#endif
 
     append_samples(bench_push_move<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_push_move<STL>("STLStack", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
     append_samples(bench_push_move<BoostStack>("BoostStack", iterations, repeats));
-#endif
 
     append_samples(bench_emplace<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_emplace<STL>("STLStack", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
     append_samples(bench_emplace<BoostStack>("BoostStack", iterations, repeats));
-#endif
 
     append_samples(bench_pop<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_pop<STL>("STLStack", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
     append_samples(bench_pop<BoostStack>("BoostStack", iterations, repeats));
-#endif
-
-    append_samples(bench_size<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_size<STL>("STLStack", iterations, repeats));
 
     append_samples(bench_empty<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_empty<STL>("STLStack", iterations, repeats));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
     append_samples(bench_empty<BoostStack>("BoostStack", iterations, repeats));
-#endif
-
-    append_samples(bench_top<SeraphStack>("stack", iterations, repeats));
-    append_samples(bench_top<STL>("STLStack", iterations, repeats));
-    append_samples(bench_reserve_stack(iterations, repeats));
 
     const std::vector<int> contention_threads = {2, 4, 8, 16};
     const std::vector<int> push_percents = {50, 80, 20};
@@ -1178,14 +1154,6 @@ int main(int argc, char** argv) {
                     contention_ops_per_thread,
                     repeats
             ));
-            append_samples(bench_contention_mix<STLContention>(
-                    "STLStack",
-                    thread_count,
-                    push_percent,
-                    contention_ops_per_thread,
-                    repeats
-            ));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
             append_samples(bench_contention_mix<BoostStack>(
                     "BoostStack",
                     thread_count,
@@ -1193,7 +1161,6 @@ int main(int argc, char** argv) {
                     contention_ops_per_thread,
                     repeats
             ));
-#endif
         }
     }
 
@@ -1204,20 +1171,12 @@ int main(int argc, char** argv) {
                 specialized_ops_per_thread,
                 repeats
         ));
-        append_samples(bench_mt_push_only<STLContention>(
-                "STLStack",
-                thread_count,
-                specialized_ops_per_thread,
-                repeats
-        ));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
         append_samples(bench_mt_push_only<BoostStack>(
                 "BoostStack",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
-#endif
 
         append_samples(bench_mt_pop_only<SeraphStack>(
                 "stack",
@@ -1225,20 +1184,12 @@ int main(int argc, char** argv) {
                 specialized_ops_per_thread,
                 repeats
         ));
-        append_samples(bench_mt_pop_only<STLContention>(
-                "STLStack",
-                thread_count,
-                specialized_ops_per_thread,
-                repeats
-        ));
-#if SERAPH_HAS_BOOST_LOCKFREE_STACK
         append_samples(bench_mt_pop_only<BoostStack>(
                 "BoostStack",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
-#endif
     }
 
     const auto aggregates = build_aggregates(samples);
@@ -1265,9 +1216,6 @@ int main(int argc, char** argv) {
     std::cout << "Graph (ops/sec, averaged): " << ops_svg_path << "\n";
     std::cout << "Graph (contention ops/sec, averaged): " << contention_svg_path << "\n";
     std::cout << "Graph (specialized mt ops/sec, averaged): " << specialized_mt_svg_path << "\n";
-#if !SERAPH_HAS_BOOST_LOCKFREE_STACK
-    std::cout << "Boost lockfree stack headers not found; BoostStack comparison skipped.\n";
-#endif
     std::cout << "Sink: " << g_sink << "\n";
 
     return 0;
