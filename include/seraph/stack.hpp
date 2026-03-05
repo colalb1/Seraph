@@ -425,7 +425,7 @@ namespace seraph {
 
         size_t size() const noexcept {
             std::shared_lock mode_guard(mode_mutex_);
-            if (using_cas_.load(std::memory_order_acq_rel)) {
+            if (using_cas_.load(std::memory_order_acquire)) {
                 return cas_size_impl();
             }
 
