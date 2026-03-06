@@ -1190,13 +1190,13 @@ int main(int argc, char** argv) {
         );
     };
 
-#if !SERAPH_HAS_BOOST_LOCKFREE_QUEUE
+    using SeraphQueue = seraph::queue<int>;
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
+    using BoostQueue = BoostLockfreeQueueAdapter;
+#else
     std::cerr << "Boost lockfree queue headers not found; cannot run Boost-only comparison.\n";
     return 3;
 #endif
-
-    using SeraphQueue = seraph::queue<int>;
-    using BoostQueue = BoostLockfreeQueueAdapter;
 
     append_samples(bench_push_copy<SeraphQueue>("queue", iterations, repeats));
     append_samples(bench_push_copy<BoostQueue>("BoostQueue", iterations, repeats));

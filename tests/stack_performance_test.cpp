@@ -1120,13 +1120,13 @@ int main(int argc, char** argv) {
         );
     };
 
-#if !SERAPH_HAS_BOOST_LOCKFREE_STACK
+    using SeraphStack = seraph::stack<int>;
+#if SERAPH_HAS_BOOST_LOCKFREE_STACK
+    using BoostStack = BoostLockfreeStackAdapter;
+#else
     std::cerr << "Boost lockfree stack headers not found; cannot run Boost-only comparison.\n";
     return 3;
 #endif
-
-    using SeraphStack = seraph::stack<int>;
-    using BoostStack = BoostLockfreeStackAdapter;
 
     append_samples(bench_push_copy<SeraphStack>("stack", iterations, repeats));
     append_samples(bench_push_copy<BoostStack>("BoostStack", iterations, repeats));
