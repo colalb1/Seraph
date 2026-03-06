@@ -1193,10 +1193,6 @@ int main(int argc, char** argv) {
     using SeraphQueue = seraph::queue<int>;
 #if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     using BoostQueue = BoostLockfreeQueueAdapter;
-#else
-    std::cerr << "Boost lockfree queue headers not found; cannot run Boost-only comparison.\n";
-    return 3;
-#endif
 
     append_samples(bench_push_copy<SeraphQueue>("queue", iterations, repeats));
     append_samples(bench_push_copy<BoostQueue>("BoostQueue", iterations, repeats));
@@ -1263,6 +1259,10 @@ int main(int argc, char** argv) {
                 repeats
         ));
     }
+#else
+    std::cerr << "Boost lockfree queue headers not found; cannot run Boost-only comparison.\n";
+    return 3;
+#endif
 
     const auto aggregates = build_aggregates(samples);
 
