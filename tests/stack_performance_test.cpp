@@ -1143,7 +1143,7 @@ int main(int argc, char** argv) {
     append_samples(bench_empty<SeraphStack>("stack", iterations, repeats));
     append_samples(bench_empty<BoostStack>("BoostStack", iterations, repeats));
 
-    const std::vector<int> contention_threads = {4};
+    const std::vector<int> contention_threads = {2, 4, 8};
     const std::vector<int> push_percents = {10, 20, 50, 80, 100};
     for (const int thread_count : contention_threads) {
         for (const int push_percent : push_percents) {
