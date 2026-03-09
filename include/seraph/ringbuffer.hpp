@@ -68,6 +68,9 @@ namespace seraph {
         }
 
         [[nodiscard]] auto slot_for(std::size_t position) noexcept -> Slot& {
+            // Index computation is logically equivalent to `index = position % capacity_`
+            // since `capacity_mask_` follows this expression: `2^{n} - 1`.
+            // Bitmasking is used rather than modulus computation as it is MUCH faster.
             return slots_[position & capacity_mask_];
         }
 
