@@ -811,7 +811,7 @@ int main(int argc, char** argv) {
                 },
         };
 
-        if (!run_planned_history<RingBufferAdapter, RingBufferBestEffortSpec>(
+        if (!run_phased_history<RingBufferAdapter, RingBufferBestEffortSpec>(
                     "ringbuffer_full_then_drain",
                     plan,
                     []() {
@@ -836,7 +836,7 @@ int main(int argc, char** argv) {
                 },
         };
 
-        if (!run_planned_history<RingBufferAdapter, RingBufferBestEffortSpec>(
+        if (!run_phased_history<RingBufferAdapter, RingBufferBestEffortSpec>(
                     "ringbuffer_empty_then_fill",
                     plan,
                     []() {
@@ -861,7 +861,7 @@ int main(int argc, char** argv) {
                 },
         };
 
-        if (!run_planned_history<RingBufferAdapter, RingBufferBestEffortSpec>(
+        if (!run_phased_history<RingBufferAdapter, RingBufferBestEffortSpec>(
                     "ringbuffer_peek_under_contention",
                     plan,
                     []() {
