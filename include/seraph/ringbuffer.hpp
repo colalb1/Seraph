@@ -17,9 +17,14 @@
 namespace seraph {
     template <typename T> class RingBuffer {
       private:
+#if defined(__cpp_lib_hardware_interference_size)
         static constexpr size_t k_destructive_interference_size{
                 std::hardware_destructive_interference_size
         };
+#else
+        static constexpr size_t k_destructive_interference_size{64};
+#endif
+
         static constexpr size_t k_backoff_batch{32};
         static_assert((k_backoff_batch & (k_backoff_batch - 1)) == 0);
 
