@@ -1,4 +1,5 @@
 #include "seraph/queue.hpp"
+#include "seraph/ringbuffer.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -11,7 +12,6 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
-#include <mutex>
 #include <optional>
 #include <queue>
 #include <sstream>
@@ -39,7 +39,7 @@ namespace {
     struct BenchmarkSample {
         std::string implementation;
         std::string operation;
-        std::size_t iterations;
+        size_t iterations;
         int repeat_index;
         double total_ns;
         double nanoseconds_per_op;
@@ -49,7 +49,7 @@ namespace {
     struct BenchmarkAggregate {
         std::string implementation;
         std::string operation;
-        std::size_t iterations;
+        size_t iterations;
         int repeats;
         double avg_nanoseconds_per_op;
         double avg_ops_per_second;
@@ -58,6 +58,8 @@ namespace {
     };
 
     volatile std::uint64_t g_sink = 0;
+
+    constexpr size_t k_benchmark_ringbuffer_capacity = 1U << 22;
 
     class STLQueueAdapter {
       public:
@@ -103,7 +105,7 @@ namespace {
             return data_.empty();
         }
 
-        auto size() const noexcept -> std::size_t {
+        auto size() const noexcept -> size_t {
             return data_.size();
         }
 
@@ -111,65 +113,44 @@ namespace {
         std::queue<int, std::deque<int>> data_;
     };
 
-    class ThreadSafeSTLQueueAdapter {
+    class RingBufferAdapter {
       public:
+        RingBufferAdapter() : data_(k_benchmark_ringbuffer_capacity) {}
+
         void push(const int& value) {
-            std::scoped_lock<std::mutex> guard(lock_);
             data_.push(value);
         }
 
         void push(int&& value) {
-            std::scoped_lock<std::mutex> guard(lock_);
             data_.push(std::move(value));
         }
 
         template <typename... Args> void emplace(Args&&... args) {
-            std::scoped_lock<std::mutex> guard(lock_);
             data_.emplace(std::forward<Args>(args)...);
         }
 
         auto pop() -> std::optional<int> {
-            std::scoped_lock<std::mutex> guard(lock_);
-            if (data_.empty()) {
-                return std::nullopt;
-            }
-
-            int value = std::move(data_.front());
-            data_.pop();
-            return value;
+            return data_.pop();
         }
 
         auto front() const -> std::optional<int> {
-            std::scoped_lock<std::mutex> guard(lock_);
-            if (data_.empty()) {
-                return std::nullopt;
-            }
-
             return data_.front();
         }
 
         auto back() const -> std::optional<int> {
-            std::scoped_lock<std::mutex> guard(lock_);
-            if (data_.empty()) {
-                return std::nullopt;
-            }
-
             return data_.back();
         }
 
         auto empty() const noexcept -> bool {
-            std::scoped_lock<std::mutex> guard(lock_);
             return data_.empty();
         }
 
-        auto size() const noexcept -> std::size_t {
-            std::scoped_lock<std::mutex> guard(lock_);
+        auto size() const noexcept -> size_t {
             return data_.size();
         }
 
       private:
-        mutable std::mutex lock_;
-        std::queue<int, std::deque<int>> data_;
+        seraph::RingBuffer<int> data_;
     };
 
 #if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
@@ -209,13 +190,13 @@ namespace {
             return data_.empty();
         }
 
-        auto size() const noexcept -> std::size_t {
+        auto size() const noexcept -> size_t {
             return size_.load(std::memory_order_relaxed);
         }
 
       private:
         boost::lockfree::queue<int> data_;
-        std::atomic<std::size_t> size_{0};
+        std::atomic<size_t> size_{0};
     };
 #endif
 
@@ -242,12 +223,12 @@ namespace {
     auto run_samples(
             std::string_view impl_name,
             std::string_view operation,
-            std::size_t iterations,
+            size_t iterations,
             int repeats,
             Fn&& fn
     ) -> std::vector<BenchmarkSample> {
         std::vector<BenchmarkSample> samples;
-        samples.reserve(static_cast<std::size_t>(repeats));
+        samples.reserve(static_cast<size_t>(repeats));
 
         for (int repeat = 0; repeat < repeats; ++repeat) {
             const auto start = Clock::now();
@@ -274,13 +255,13 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_push_copy(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_push_copy(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "push_copy", iterations, repeats, [iterations]() {
             QueueType queue;
             const int value = 42;
 
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 queue.push(value);
             }
             g_sink += queue.size();
@@ -288,11 +269,11 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_push_move(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_push_move(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "push_move", iterations, repeats, [iterations]() {
             QueueType queue;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 int value = static_cast<int>(iii);
                 queue.push(std::move(value));
             }
@@ -301,11 +282,11 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_emplace(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_emplace(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "emplace", iterations, repeats, [iterations]() {
             QueueType queue;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 queue.emplace(static_cast<int>(iii));
             }
             g_sink += queue.size();
@@ -313,16 +294,16 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_pop(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_pop(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "pop", iterations, repeats, [iterations]() {
             QueueType queue;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 queue.emplace(static_cast<int>(iii));
             }
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 auto value = queue.pop();
                 if (value.has_value()) {
                     local_sum += static_cast<std::uint64_t>(*value);
@@ -333,14 +314,14 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_front(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_front(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "front", iterations, repeats, [iterations]() {
             QueueType queue;
             queue.emplace(7);
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 auto value = queue.front();
                 if (value.has_value()) {
                     local_sum += static_cast<std::uint64_t>(*value);
@@ -351,14 +332,14 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_back(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_back(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "back", iterations, repeats, [iterations]() {
             QueueType queue;
             queue.emplace(11);
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 auto value = queue.back();
                 if (value.has_value()) {
                     local_sum += static_cast<std::uint64_t>(*value);
@@ -369,16 +350,16 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_size(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_size(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "size", iterations, repeats, [iterations]() {
             QueueType queue;
-            for (std::size_t iii = 0; iii < 1024; ++iii) {
+            for (size_t iii = 0; iii < 1024; ++iii) {
                 queue.emplace(static_cast<int>(iii));
             }
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 local_sum += queue.size();
             }
             g_sink += local_sum;
@@ -386,14 +367,14 @@ namespace {
     }
 
     template <typename QueueType>
-    auto bench_empty(std::string_view impl_name, std::size_t iterations, int repeats)
+    auto bench_empty(std::string_view impl_name, size_t iterations, int repeats)
             -> std::vector<BenchmarkSample> {
         return run_samples(impl_name, "empty", iterations, repeats, [iterations]() {
             QueueType queue;
             queue.emplace(1);
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 local_sum += static_cast<std::uint64_t>(queue.empty());
             }
             g_sink += local_sum;
@@ -411,10 +392,10 @@ namespace {
             std::string_view impl_name,
             int thread_count,
             int push_percent,
-            std::size_t ops_per_thread,
+            size_t ops_per_thread,
             int repeats
     ) -> std::vector<BenchmarkSample> {
-        const std::size_t total_ops = static_cast<std::size_t>(thread_count) * ops_per_thread;
+        const size_t total_ops = static_cast<size_t>(thread_count) * ops_per_thread;
         const std::string op_label = make_contention_operation_label(thread_count, push_percent);
 
         return run_samples(
@@ -424,8 +405,7 @@ namespace {
                 repeats,
                 [thread_count, push_percent, ops_per_thread]() {
                     QueueType queue;
-                    for (std::size_t iii = 0;
-                         iii < static_cast<std::size_t>(thread_count) * ops_per_thread;
+                    for (size_t iii = 0; iii < static_cast<size_t>(thread_count) * ops_per_thread;
                          ++iii) {
                         queue.emplace(static_cast<int>(iii));
                     }
@@ -434,7 +414,7 @@ namespace {
                     std::atomic<std::uint64_t> pop_sum{0};
 
                     std::vector<std::thread> workers;
-                    workers.reserve(static_cast<std::size_t>(thread_count));
+                    workers.reserve(static_cast<size_t>(thread_count));
 
                     for (int thread_index = 0; thread_index < thread_count; ++thread_index) {
                         workers.emplace_back([&, thread_index]() {
@@ -443,7 +423,7 @@ namespace {
                             std::uint64_t local_sum = 0;
 
                             sync_start.arrive_and_wait();
-                            for (std::size_t iii = 0; iii < ops_per_thread; ++iii) {
+                            for (size_t iii = 0; iii < ops_per_thread; ++iii) {
                                 seed ^= seed << 13;
                                 seed ^= seed >> 7;
                                 seed ^= seed << 17;
@@ -451,7 +431,7 @@ namespace {
                                 const int roll = static_cast<int>(seed % 100ULL);
                                 if (roll < push_percent) {
                                     queue.push(static_cast<int>(
-                                            iii ^ static_cast<std::size_t>(thread_index)
+                                            iii ^ static_cast<size_t>(thread_index)
                                     ));
                                 }
                                 else {
@@ -484,10 +464,10 @@ namespace {
     auto bench_mt_push_only(
             std::string_view impl_name,
             int thread_count,
-            std::size_t ops_per_thread,
+            size_t ops_per_thread,
             int repeats
     ) -> std::vector<BenchmarkSample> {
-        const std::size_t total_ops = static_cast<std::size_t>(thread_count) * ops_per_thread;
+        const size_t total_ops = static_cast<size_t>(thread_count) * ops_per_thread;
         const std::string op_label = make_mt_simple_operation_label("push_only", thread_count);
 
         return run_samples(
@@ -499,15 +479,14 @@ namespace {
                     QueueType queue;
                     std::barrier sync_start(thread_count + 1);
                     std::vector<std::thread> workers;
-                    workers.reserve(static_cast<std::size_t>(thread_count));
+                    workers.reserve(static_cast<size_t>(thread_count));
 
                     for (int thread_index = 0; thread_index < thread_count; ++thread_index) {
                         workers.emplace_back([&, thread_index]() {
                             sync_start.arrive_and_wait();
-                            for (std::size_t iii = 0; iii < ops_per_thread; ++iii) {
-                                queue.push(static_cast<int>(
-                                        iii + static_cast<std::size_t>(thread_index)
-                                ));
+                            for (size_t iii = 0; iii < ops_per_thread; ++iii) {
+                                queue.push(static_cast<int>(iii + static_cast<size_t>(thread_index))
+                                );
                             }
                         });
                     }
@@ -526,10 +505,10 @@ namespace {
     auto bench_mt_pop_only(
             std::string_view impl_name,
             int thread_count,
-            std::size_t ops_per_thread,
+            size_t ops_per_thread,
             int repeats
     ) -> std::vector<BenchmarkSample> {
-        const std::size_t total_ops = static_cast<std::size_t>(thread_count) * ops_per_thread;
+        const size_t total_ops = static_cast<size_t>(thread_count) * ops_per_thread;
         const std::string op_label = make_mt_simple_operation_label("pop_only", thread_count);
 
         return run_samples(
@@ -539,20 +518,20 @@ namespace {
                 repeats,
                 [thread_count, ops_per_thread, total_ops]() {
                     QueueType queue;
-                    for (std::size_t iii = 0; iii < total_ops; ++iii) {
+                    for (size_t iii = 0; iii < total_ops; ++iii) {
                         queue.emplace(static_cast<int>(iii));
                     }
 
                     std::barrier sync_start(thread_count + 1);
                     std::atomic<std::uint64_t> pop_sum{0};
                     std::vector<std::thread> workers;
-                    workers.reserve(static_cast<std::size_t>(thread_count));
+                    workers.reserve(static_cast<size_t>(thread_count));
 
                     for (int thread_index = 0; thread_index < thread_count; ++thread_index) {
                         workers.emplace_back([&, thread_index]() {
                             std::uint64_t local_sum = 0;
                             sync_start.arrive_and_wait();
-                            for (std::size_t iii = 0; iii < ops_per_thread; ++iii) {
+                            for (size_t iii = 0; iii < ops_per_thread; ++iii) {
                                 auto value = queue.pop();
                                 if (value.has_value()) {
                                     local_sum += static_cast<std::uint64_t>(*value);
@@ -640,11 +619,14 @@ namespace {
     }
 
     auto color_for_impl(std::string_view impl) -> std::string {
+        if (impl == "ringbuffer") {
+            return "#e76f51";
+        }
         if (impl == "queue") {
             return "#2a9d8f";
         }
         if (impl == "BoostQueue") {
-            return "#e76f51";
+            return "#6a4c93";
         }
         return "#264653";
     }
@@ -674,10 +656,33 @@ namespace {
             }
         }
 
-        std::vector<std::string> impls = {"queue"};
-#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
-        impls.push_back("BoostQueue");
-#endif
+        std::vector<std::string> impls;
+        for (const auto& result : aggregates) {
+            if (std::find(impls.begin(), impls.end(), result.implementation) == impls.end()) {
+                impls.push_back(result.implementation);
+            }
+        }
+        const std::vector<std::string> preferred_order = {
+                "ringbuffer",
+                "queue",
+                "BoostQueue",
+        };
+        std::sort(impls.begin(), impls.end(), [&](const std::string& lhs, const std::string& rhs) {
+            const auto lhs_it = std::find(preferred_order.begin(), preferred_order.end(), lhs);
+            const auto rhs_it = std::find(preferred_order.begin(), preferred_order.end(), rhs);
+            const size_t lhs_rank =
+                    lhs_it == preferred_order.end()
+                            ? preferred_order.size()
+                            : static_cast<size_t>(std::distance(preferred_order.begin(), lhs_it));
+            const size_t rhs_rank =
+                    rhs_it == preferred_order.end()
+                            ? preferred_order.size()
+                            : static_cast<size_t>(std::distance(preferred_order.begin(), rhs_it));
+            if (lhs_rank != rhs_rank) {
+                return lhs_rank < rhs_rank;
+            }
+            return lhs < rhs;
+        });
 
         std::map<std::string, std::map<std::string, double>> metric_by_op_impl;
         double max_metric = 0.0;
@@ -738,7 +743,7 @@ namespace {
             << (width - margin_right) << "\" y2=\"" << (height - margin_bottom)
             << "\" stroke=\"#222222\" stroke-width=\"2\"/>\n";
 
-        for (std::size_t op_idx = 0; op_idx < operations.size(); ++op_idx) {
+        for (size_t op_idx = 0; op_idx < operations.size(); ++op_idx) {
             const std::string& op = operations[op_idx];
             const double group_start = margin_left + static_cast<double>(op_idx) * group_w;
             const double center = group_start + group_w / 2.0;
@@ -755,7 +760,7 @@ namespace {
                 }
             }
 
-            for (std::size_t impl_idx = 0; impl_idx < present_impls.size(); ++impl_idx) {
+            for (size_t impl_idx = 0; impl_idx < present_impls.size(); ++impl_idx) {
                 const std::string& impl = present_impls[impl_idx];
                 const auto impl_it = op_it->second.find(impl);
                 const double metric = impl_it->second;
@@ -811,8 +816,8 @@ namespace {
             return false;
         }
 
-        const std::size_t push_pos = operation.find("_push");
-        const std::size_t pop_pos = operation.find("_pop");
+        const size_t push_pos = operation.find("_push");
+        const size_t pop_pos = operation.find("_pop");
         if (push_pos == std::string::npos || pop_pos == std::string::npos || pop_pos <= push_pos) {
             return false;
         }
@@ -832,7 +837,7 @@ namespace {
         return true;
     }
 
-    auto color_for_series_index(std::size_t index) -> std::string {
+    auto color_for_series_index(size_t index) -> std::string {
         static const std::vector<std::string> palette = {
                 "#1d3557",
                 "#e76f51",
@@ -846,14 +851,17 @@ namespace {
         return palette[index % palette.size()];
     }
 
-    void write_contention_svg(
+    auto write_contention_split_svgs(
             const std::vector<BenchmarkAggregate>& aggregates,
-            const std::filesystem::path& output_path
-    ) {
-        std::map<std::string, std::vector<ContentionSeriesPoint>> series;
-        std::vector<int> thread_counts;
-        double max_ops = 0.0;
+            const std::filesystem::path& output_dir
+    ) -> std::vector<std::filesystem::path> {
+        struct SplitContentionData {
+            std::vector<int> thread_counts;
+            std::map<std::string, std::vector<ContentionSeriesPoint>> by_impl;
+            double max_ops_per_sec{0.0};
+        };
 
+        std::map<std::pair<int, int>, SplitContentionData> by_split;
         for (const auto& aggregate : aggregates) {
             int thread_count = 0;
             int push_percent = 0;
@@ -867,111 +875,173 @@ namespace {
                 continue;
             }
 
-            const std::string key = aggregate.implementation + " " + std::to_string(push_percent) +
-                                    "/" + std::to_string(pop_percent);
-            series[key].push_back(ContentionSeriesPoint{
+            SplitContentionData& split_data = by_split[{push_percent, pop_percent}];
+            split_data.by_impl[aggregate.implementation].push_back(ContentionSeriesPoint{
                     .thread_count = thread_count,
                     .avg_ops_per_second = aggregate.avg_ops_per_second,
             });
-            if (std::find(thread_counts.begin(), thread_counts.end(), thread_count) ==
-                thread_counts.end()) {
-                thread_counts.push_back(thread_count);
+            if (std::find(
+                        split_data.thread_counts.begin(),
+                        split_data.thread_counts.end(),
+                        thread_count
+                ) == split_data.thread_counts.end()) {
+                split_data.thread_counts.push_back(thread_count);
             }
-            max_ops = std::max(max_ops, aggregate.avg_ops_per_second);
-        }
-
-        std::sort(thread_counts.begin(), thread_counts.end());
-        for (auto& [_, points] : series) {
-            std::sort(points.begin(), points.end(), [](const auto& lhs, const auto& rhs) {
-                return lhs.thread_count < rhs.thread_count;
-            });
+            split_data.max_ops_per_sec =
+                    std::max(split_data.max_ops_per_sec, aggregate.avg_ops_per_second);
         }
 
         const int width = 1280;
         const int height = 720;
         const int margin_left = 90;
-        const int margin_right = 240;
+        const int margin_right = 260;
         const int margin_top = 80;
         const int margin_bottom = 90;
         const double plot_w = static_cast<double>(width - margin_left - margin_right);
         const double plot_h = static_cast<double>(height - margin_top - margin_bottom);
 
-        std::ofstream out(output_path);
-        out << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width << "\" height=\""
-            << height << "\" viewBox=\"0 0 " << width << " " << height << "\">\n";
-        out << "<rect x=\"0\" y=\"0\" width=\"" << width << "\" height=\"" << height
-            << "\" fill=\"#ffffff\"/>\n";
-        out << "<text x=\"" << width / 2
-            << "\" y=\"40\" text-anchor=\"middle\" font-size=\"26\" font-family=\"Menlo, "
-               "monospace\" "
-               "fill=\"#111111\">queue Contention Throughput (average ops/sec)</text>\n";
+        std::vector<std::filesystem::path> output_paths;
+        output_paths.reserve(by_split.size());
 
-        for (int tick = 0; tick <= 5; ++tick) {
-            const double ratio = static_cast<double>(tick) / 5.0;
-            const double y = margin_top + plot_h - ratio * plot_h;
-            const double value = ratio * max_ops;
-            out << "<line x1=\"" << margin_left << "\" y1=\"" << y << "\" x2=\""
-                << (width - margin_right) << "\" y2=\"" << y
-                << "\" stroke=\"#e0e0e0\" stroke-width=\"1\"/>\n";
-            out << "<text x=\"" << (margin_left - 10) << "\" y=\"" << (y + 4)
-                << "\" text-anchor=\"end\" font-size=\"12\" font-family=\"Menlo, monospace\" "
-                   "fill=\"#444444\">"
-                << format_metric(value) << "</text>\n";
-        }
+        for (auto& [split, split_data] : by_split) {
+            const int push_percent = split.first;
+            const int pop_percent = split.second;
 
-        out << "<line x1=\"" << margin_left << "\" y1=\"" << margin_top << "\" x2=\"" << margin_left
-            << "\" y2=\"" << (height - margin_bottom)
-            << "\" stroke=\"#222222\" stroke-width=\"2\"/>\n";
-        out << "<line x1=\"" << margin_left << "\" y1=\"" << (height - margin_bottom) << "\" x2=\""
-            << (width - margin_right) << "\" y2=\"" << (height - margin_bottom)
-            << "\" stroke=\"#222222\" stroke-width=\"2\"/>\n";
-
-        auto x_for_threads = [&](int threads) {
-            const auto it = std::find(thread_counts.begin(), thread_counts.end(), threads);
-            const std::size_t idx =
-                    static_cast<std::size_t>(std::distance(thread_counts.begin(), it));
-            const double frac = thread_counts.size() == 1
-                                        ? 0.0
-                                        : static_cast<double>(idx) /
-                                                  static_cast<double>(thread_counts.size() - 1);
-            return margin_left + frac * plot_w;
-        };
-
-        for (const int threads : thread_counts) {
-            const double x = x_for_threads(threads);
-            out << "<text x=\"" << x << "\" y=\"" << (height - margin_bottom + 20)
-                << "\" text-anchor=\"middle\" font-size=\"12\" font-family=\"Menlo, monospace\" "
-                   "fill=\"#222222\">"
-                << threads << "t</text>\n";
-        }
-
-        int legend_y = 90;
-        std::size_t series_index = 0;
-        for (const auto& [key, points] : series) {
-            const std::string color = color_for_series_index(series_index);
-
-            std::string polyline_points;
-            for (const auto& point : points) {
-                const double x = x_for_threads(point.thread_count);
-                const double ratio = (max_ops > 0.0) ? (point.avg_ops_per_second / max_ops) : 0.0;
-                const double y = margin_top + plot_h - ratio * plot_h;
-                polyline_points += std::to_string(x) + "," + std::to_string(y) + " ";
-                out << "<circle cx=\"" << x << "\" cy=\"" << y << "\" r=\"3.5\" fill=\"" << color
-                    << "\"/>\n";
+            std::sort(split_data.thread_counts.begin(), split_data.thread_counts.end());
+            for (auto& [_, points] : split_data.by_impl) {
+                std::sort(points.begin(), points.end(), [](const auto& lhs, const auto& rhs) {
+                    return lhs.thread_count < rhs.thread_count;
+                });
             }
-            out << "<polyline points=\"" << polyline_points << "\" fill=\"none\" stroke=\"" << color
-                << "\" stroke-width=\"2.5\"/>\n";
 
-            out << "<rect x=\"" << (width - margin_right + 20) << "\" y=\"" << (legend_y - 10)
-                << "\" width=\"14\" height=\"14\" fill=\"" << color << "\"/>\n";
-            out << "<text x=\"" << (width - margin_right + 40) << "\" y=\"" << legend_y
-                << "\" font-size=\"12\" font-family=\"Menlo, monospace\" fill=\"#222222\">" << key
-                << "</text>\n";
-            legend_y += 24;
-            ++series_index;
+            std::vector<std::string> impls;
+            impls.reserve(split_data.by_impl.size());
+            for (const auto& [impl, _] : split_data.by_impl) {
+                impls.push_back(impl);
+            }
+            const std::vector<std::string> preferred_order = {"ringbuffer", "queue", "BoostQueue"};
+            std::sort(
+                    impls.begin(),
+                    impls.end(),
+                    [&](const std::string& lhs, const std::string& rhs) {
+                        const auto lhs_it =
+                                std::find(preferred_order.begin(), preferred_order.end(), lhs);
+                        const auto rhs_it =
+                                std::find(preferred_order.begin(), preferred_order.end(), rhs);
+                        const size_t lhs_rank =
+                                lhs_it == preferred_order.end()
+                                        ? preferred_order.size()
+                                        : static_cast<size_t>(
+                                                  std::distance(preferred_order.begin(), lhs_it)
+                                          );
+                        const size_t rhs_rank =
+                                rhs_it == preferred_order.end()
+                                        ? preferred_order.size()
+                                        : static_cast<size_t>(
+                                                  std::distance(preferred_order.begin(), rhs_it)
+                                          );
+                        if (lhs_rank != rhs_rank) {
+                            return lhs_rank < rhs_rank;
+                        }
+                        return lhs < rhs;
+                    }
+            );
+
+            const auto output_path =
+                    output_dir / ("queue_contention_push" + std::to_string(push_percent) + "_pop" +
+                                  std::to_string(pop_percent) + "_ops_per_sec.svg");
+            output_paths.push_back(output_path);
+
+            std::ofstream out(output_path);
+            out << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width << "\" height=\""
+                << height << "\" viewBox=\"0 0 " << width << " " << height << "\">\n";
+            out << "<rect x=\"0\" y=\"0\" width=\"" << width << "\" height=\"" << height
+                << "\" fill=\"#ffffff\"/>\n";
+            out << "<text x=\"" << width / 2
+                << "\" y=\"40\" text-anchor=\"middle\" font-size=\"26\" font-family=\"Menlo, "
+                   "monospace\" fill=\"#111111\">queue Contention Throughput "
+                << push_percent << "/" << pop_percent << " (average ops/sec)</text>\n";
+
+            for (int tick = 0; tick <= 5; ++tick) {
+                const double ratio = static_cast<double>(tick) / 5.0;
+                const double y = margin_top + plot_h - ratio * plot_h;
+                const double value = ratio * split_data.max_ops_per_sec;
+                out << "<line x1=\"" << margin_left << "\" y1=\"" << y << "\" x2=\""
+                    << (width - margin_right) << "\" y2=\"" << y
+                    << "\" stroke=\"#e0e0e0\" stroke-width=\"1\"/>\n";
+                out << "<text x=\"" << (margin_left - 10) << "\" y=\"" << (y + 4)
+                    << "\" text-anchor=\"end\" font-size=\"12\" font-family=\"Menlo, monospace\" "
+                       "fill=\"#444444\">"
+                    << format_metric(value) << "</text>\n";
+            }
+
+            out << "<line x1=\"" << margin_left << "\" y1=\"" << margin_top << "\" x2=\""
+                << margin_left << "\" y2=\"" << (height - margin_bottom)
+                << "\" stroke=\"#222222\" stroke-width=\"2\"/>\n";
+            out << "<line x1=\"" << margin_left << "\" y1=\"" << (height - margin_bottom)
+                << "\" x2=\"" << (width - margin_right) << "\" y2=\"" << (height - margin_bottom)
+                << "\" stroke=\"#222222\" stroke-width=\"2\"/>\n";
+
+            auto x_for_threads = [&](int threads) {
+                const auto it = std::find(
+                        split_data.thread_counts.begin(),
+                        split_data.thread_counts.end(),
+                        threads
+                );
+                const size_t idx =
+                        static_cast<size_t>(std::distance(split_data.thread_counts.begin(), it));
+                const double frac =
+                        split_data.thread_counts.size() == 1
+                                ? 0.0
+                                : static_cast<double>(idx) /
+                                          static_cast<double>(split_data.thread_counts.size() - 1);
+                return margin_left + frac * plot_w;
+            };
+
+            for (const int threads : split_data.thread_counts) {
+                const double x = x_for_threads(threads);
+                out << "<text x=\"" << x << "\" y=\"" << (height - margin_bottom + 20)
+                    << "\" text-anchor=\"middle\" font-size=\"12\" font-family=\"Menlo, "
+                       "monospace\" "
+                       "fill=\"#222222\">"
+                    << threads << "t</text>\n";
+            }
+
+            int legend_y = 90;
+            for (const auto& impl : impls) {
+                const std::string color = color_for_impl(impl);
+                const auto points_it = split_data.by_impl.find(impl);
+                if (points_it == split_data.by_impl.end()) {
+                    continue;
+                }
+
+                std::string polyline_points;
+                for (const auto& point : points_it->second) {
+                    const double x = x_for_threads(point.thread_count);
+                    const double ratio =
+                            split_data.max_ops_per_sec > 0.0
+                                    ? point.avg_ops_per_second / split_data.max_ops_per_sec
+                                    : 0.0;
+                    const double y = margin_top + plot_h - ratio * plot_h;
+                    polyline_points += std::to_string(x) + "," + std::to_string(y) + " ";
+                    out << "<circle cx=\"" << x << "\" cy=\"" << y << "\" r=\"3.5\" fill=\""
+                        << color << "\"/>\n";
+                }
+                out << "<polyline points=\"" << polyline_points << "\" fill=\"none\" stroke=\""
+                    << color << "\" stroke-width=\"2.5\"/>\n";
+
+                out << "<rect x=\"" << (width - margin_right + 20) << "\" y=\"" << (legend_y - 10)
+                    << "\" width=\"14\" height=\"14\" fill=\"" << color << "\"/>\n";
+                out << "<text x=\"" << (width - margin_right + 40) << "\" y=\"" << legend_y
+                    << "\" font-size=\"12\" font-family=\"Menlo, monospace\" fill=\"#222222\">"
+                    << impl << "</text>\n";
+                legend_y += 24;
+            }
+
+            out << "</svg>\n";
         }
 
-        out << "</svg>\n";
+        return output_paths;
     }
 
     bool
@@ -991,6 +1061,7 @@ namespace {
 
     void write_mt_specialized_svg(
             const std::vector<BenchmarkAggregate>& aggregates,
+            std::string_view mode_prefix,
             const std::filesystem::path& output_path
     ) {
         std::map<std::string, std::vector<ContentionSeriesPoint>> series;
@@ -1000,11 +1071,8 @@ namespace {
         for (const auto& aggregate : aggregates) {
             int thread_count = 0;
             std::string key;
-            if (parse_mt_simple_op(aggregate.operation, "mt_push_only_t", thread_count)) {
-                key = aggregate.implementation + " push_only";
-            }
-            else if (parse_mt_simple_op(aggregate.operation, "mt_pop_only_t", thread_count)) {
-                key = aggregate.implementation + " pop_only";
+            if (parse_mt_simple_op(aggregate.operation, mode_prefix, thread_count)) {
+                key = aggregate.implementation;
             }
             else {
                 continue;
@@ -1043,10 +1111,12 @@ namespace {
             << height << "\" viewBox=\"0 0 " << width << " " << height << "\">\n";
         out << "<rect x=\"0\" y=\"0\" width=\"" << width << "\" height=\"" << height
             << "\" fill=\"#ffffff\"/>\n";
+        const std::string mode_label = (mode_prefix == "mt_push_only_t") ? "push_only" : "pop_only";
         out << "<text x=\"" << width / 2
             << "\" y=\"40\" text-anchor=\"middle\" font-size=\"26\" font-family=\"Menlo, "
                "monospace\" "
-               "fill=\"#111111\">queue Specialized Multithread Throughput (average ops/sec)</text>"
+               "fill=\"#111111\">queue Specialized Multithread Throughput ("
+            << mode_label << ", average ops/sec)</text>"
             << "\n";
         out << "<text x=\"28\" y=\"" << (margin_top + plot_h / 2.0)
             << "\" text-anchor=\"middle\" font-size=\"13\" font-family=\"Menlo, monospace\" "
@@ -1078,8 +1148,7 @@ namespace {
 
         auto x_for_threads = [&](int threads) {
             const auto it = std::find(thread_counts.begin(), thread_counts.end(), threads);
-            const std::size_t idx =
-                    static_cast<std::size_t>(std::distance(thread_counts.begin(), it));
+            const size_t idx = static_cast<size_t>(std::distance(thread_counts.begin(), it));
             const double frac = thread_counts.size() == 1
                                         ? 0.0
                                         : static_cast<double>(idx) /
@@ -1096,7 +1165,7 @@ namespace {
         }
 
         int legend_y = 90;
-        std::size_t series_index = 0;
+        size_t series_index = 0;
         for (const auto& [key, points] : series) {
             const std::string color = color_for_series_index(series_index);
 
@@ -1124,7 +1193,10 @@ namespace {
         out << "</svg>\n";
     }
 
-    void print_mt_comparison_summary(const std::vector<BenchmarkAggregate>& aggregates) {
+    void print_mt_comparison_summary(
+            const std::vector<BenchmarkAggregate>& aggregates,
+            std::string_view baseline_impl
+    ) {
         std::map<std::string, std::map<std::string, double>> mt_ops;
         for (const auto& aggregate : aggregates) {
             if (!aggregate.operation.starts_with("contention_") &&
@@ -1134,18 +1206,23 @@ namespace {
             mt_ops[aggregate.operation][aggregate.implementation] = aggregate.avg_ops_per_second;
         }
 
-        std::cout << "Multithread throughput ratio (queue / BoostQueue):\n";
+        std::cout << "Multithread throughput ratios (" << baseline_impl << " / other):\n";
         for (const auto& [operation, by_impl] : mt_ops) {
-            const auto queue_it = by_impl.find("queue");
-            const auto boost_it = by_impl.find("BoostQueue");
-            if (queue_it == by_impl.end() || boost_it == by_impl.end() || boost_it->second <= 0.0) {
+            const auto baseline_it = by_impl.find(std::string(baseline_impl));
+            if (baseline_it == by_impl.end() || baseline_it->second <= 0.0) {
                 continue;
             }
 
-            const double ratio = queue_it->second / boost_it->second;
-            std::cout << "  " << operation << ": " << format_ratio(ratio) << "x (queue "
-                      << format_metric(queue_it->second) << " ops/sec vs BoostQueue "
-                      << format_metric(boost_it->second) << " ops/sec)\n";
+            for (const auto& [impl, ops] : by_impl) {
+                if (impl == baseline_impl || ops <= 0.0) {
+                    continue;
+                }
+
+                const double ratio = baseline_it->second / ops;
+                std::cout << "  " << operation << ": " << format_ratio(ratio) << "x ("
+                          << baseline_impl << " " << format_metric(baseline_it->second)
+                          << " ops/sec vs " << impl << " " << format_metric(ops) << " ops/sec)\n";
+            }
         }
     }
 
@@ -1174,10 +1251,10 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    const std::size_t iterations = quick ? 20'000 : 300'000;
+    const size_t iterations = quick ? 20'000 : 300'000;
     const int repeats = quick ? 2 : 5;
-    const std::size_t contention_ops_per_thread = quick ? 10'000 : 120'000;
-    const std::size_t specialized_ops_per_thread = quick ? 15'000 : 200'000;
+    const size_t contention_ops_per_thread = quick ? 10'000 : 120'000;
+    const size_t specialized_ops_per_thread = quick ? 15'000 : 200'000;
 
     std::vector<BenchmarkSample> samples;
     samples.reserve(256);
@@ -1191,23 +1268,52 @@ int main(int argc, char** argv) {
     };
 
     using SeraphQueue = seraph::queue<int>;
+    using SeraphRingBuffer = RingBufferAdapter;
 #if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     using BoostQueue = BoostLockfreeQueueAdapter;
+#endif
 
+    append_samples(bench_push_copy<SeraphRingBuffer>("ringbuffer", iterations, repeats));
     append_samples(bench_push_copy<SeraphQueue>("queue", iterations, repeats));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_push_copy<BoostQueue>("BoostQueue", iterations, repeats));
+#endif
 
+    append_samples(bench_push_move<SeraphRingBuffer>("ringbuffer", iterations, repeats));
     append_samples(bench_push_move<SeraphQueue>("queue", iterations, repeats));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_push_move<BoostQueue>("BoostQueue", iterations, repeats));
+#endif
 
+    append_samples(bench_emplace<SeraphRingBuffer>("ringbuffer", iterations, repeats));
     append_samples(bench_emplace<SeraphQueue>("queue", iterations, repeats));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_emplace<BoostQueue>("BoostQueue", iterations, repeats));
+#endif
 
+    append_samples(bench_pop<SeraphRingBuffer>("ringbuffer", iterations, repeats));
     append_samples(bench_pop<SeraphQueue>("queue", iterations, repeats));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_pop<BoostQueue>("BoostQueue", iterations, repeats));
+#endif
 
+    append_samples(bench_front<SeraphRingBuffer>("ringbuffer", iterations, repeats));
+    append_samples(bench_front<SeraphQueue>("queue", iterations, repeats));
+
+    append_samples(bench_back<SeraphRingBuffer>("ringbuffer", iterations, repeats));
+    append_samples(bench_back<SeraphQueue>("queue", iterations, repeats));
+
+    append_samples(bench_size<SeraphRingBuffer>("ringbuffer", iterations, repeats));
+    append_samples(bench_size<SeraphQueue>("queue", iterations, repeats));
+
+    append_samples(bench_empty<SeraphRingBuffer>("ringbuffer", iterations, repeats));
     append_samples(bench_empty<SeraphQueue>("queue", iterations, repeats));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
     append_samples(bench_empty<BoostQueue>("BoostQueue", iterations, repeats));
+#else
+    std::cerr << "Boost lockfree queue headers not found; running internal queue comparisons "
+                 "without Boost.\n";
+#endif
 
     // queue pop/front/back can consume two hazard slots per thread; keep thread counts
     // bounded for reliable runs across debug/release builds.
@@ -1215,6 +1321,13 @@ int main(int argc, char** argv) {
     const std::vector<int> push_percents = {10, 20, 50, 80, 100};
     for (const int thread_count : contention_threads) {
         for (const int push_percent : push_percents) {
+            append_samples(bench_contention_mix<SeraphRingBuffer>(
+                    "ringbuffer",
+                    thread_count,
+                    push_percent,
+                    contention_ops_per_thread,
+                    repeats
+            ));
             append_samples(bench_contention_mix<SeraphQueue>(
                     "queue",
                     thread_count,
@@ -1222,6 +1335,7 @@ int main(int argc, char** argv) {
                     contention_ops_per_thread,
                     repeats
             ));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
             append_samples(bench_contention_mix<BoostQueue>(
                     "BoostQueue",
                     thread_count,
@@ -1229,40 +1343,53 @@ int main(int argc, char** argv) {
                     contention_ops_per_thread,
                     repeats
             ));
+#endif
         }
     }
 
     for (const int thread_count : contention_threads) {
+        append_samples(bench_mt_push_only<SeraphRingBuffer>(
+                "ringbuffer",
+                thread_count,
+                specialized_ops_per_thread,
+                repeats
+        ));
         append_samples(bench_mt_push_only<SeraphQueue>(
                 "queue",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
         append_samples(bench_mt_push_only<BoostQueue>(
                 "BoostQueue",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
+#endif
 
+        append_samples(bench_mt_pop_only<SeraphRingBuffer>(
+                "ringbuffer",
+                thread_count,
+                specialized_ops_per_thread,
+                repeats
+        ));
         append_samples(bench_mt_pop_only<SeraphQueue>(
                 "queue",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
+#if SERAPH_HAS_BOOST_LOCKFREE_QUEUE
         append_samples(bench_mt_pop_only<BoostQueue>(
                 "BoostQueue",
                 thread_count,
                 specialized_ops_per_thread,
                 repeats
         ));
-    }
-#else
-    std::cerr << "Boost lockfree queue headers not found; cannot run Boost-only comparison.\n";
-    return 3;
 #endif
+    }
 
     const auto aggregates = build_aggregates(samples);
 
@@ -1273,22 +1400,30 @@ int main(int argc, char** argv) {
     const auto csv_path = output_dir / "queue_benchmark_results.csv";
     const auto ns_svg_path = output_dir / "queue_ns_per_op.svg";
     const auto ops_svg_path = output_dir / "queue_ops_per_sec.svg";
-    const auto contention_svg_path = output_dir / "queue_contention_ops_per_sec.svg";
-    const auto specialized_mt_svg_path = output_dir / "queue_specialized_mt_ops_per_sec.svg";
+    const auto specialized_mt_push_svg_path =
+            output_dir / "queue_specialized_mt_push_only_ops_per_sec.svg";
+    const auto specialized_mt_pop_svg_path =
+            output_dir / "queue_specialized_mt_pop_only_ops_per_sec.svg";
 
     write_results_csv(samples, aggregates, repeats, csv_path);
     write_svg_grouped_bars(aggregates, ns_svg_path, true);
     write_svg_grouped_bars(aggregates, ops_svg_path, false);
-    write_contention_svg(aggregates, contention_svg_path);
-    write_mt_specialized_svg(aggregates, specialized_mt_svg_path);
-    print_mt_comparison_summary(aggregates);
+    const auto contention_svg_paths = write_contention_split_svgs(aggregates, output_dir);
+    write_mt_specialized_svg(aggregates, "mt_push_only_t", specialized_mt_push_svg_path);
+    write_mt_specialized_svg(aggregates, "mt_pop_only_t", specialized_mt_pop_svg_path);
+    print_mt_comparison_summary(aggregates, "ringbuffer");
 
-    std::cout << "queue performance benchmark complete.\n";
+    std::cout << "queue/ringbuffer performance benchmark complete.\n";
     std::cout << "Results CSV: " << csv_path << "\n";
     std::cout << "Graph (ns/op, averaged): " << ns_svg_path << "\n";
     std::cout << "Graph (ops/sec, averaged): " << ops_svg_path << "\n";
-    std::cout << "Graph (contention ops/sec, averaged): " << contention_svg_path << "\n";
-    std::cout << "Graph (specialized mt ops/sec, averaged): " << specialized_mt_svg_path << "\n";
+    for (const auto& contention_path : contention_svg_paths) {
+        std::cout << "Graph (contention ops/sec split, averaged): " << contention_path << "\n";
+    }
+    std::cout << "Graph (specialized mt push_only ops/sec, averaged): "
+              << specialized_mt_push_svg_path << "\n";
+    std::cout << "Graph (specialized mt pop_only ops/sec, averaged): "
+              << specialized_mt_pop_svg_path << "\n";
     std::cout << "Sink: " << g_sink << "\n";
 
     return 0;

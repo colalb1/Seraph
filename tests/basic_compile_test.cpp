@@ -1,4 +1,5 @@
 #include "seraph/queue.hpp"
+#include "seraph/ringbuffer.hpp"
 #include "seraph/stack.hpp"
 
 #include <array>
@@ -82,6 +83,42 @@ int main() {
     }
 
     if (!queue.empty()) {
+        return 1;
+    }
+
+    seraph::RingBuffer<int> ringbuffer(8);
+    if (!ringbuffer.empty()) {
+        return 1;
+    }
+
+    ringbuffer.push(11);
+    ringbuffer.emplace(12);
+
+    if (ringbuffer.front() != 11) {
+        return 1;
+    }
+
+    if (ringbuffer.back() != 12) {
+        return 1;
+    }
+
+    if (ringbuffer.size() != 2) {
+        return 1;
+    }
+
+    if (ringbuffer.pop() != 11) {
+        return 1;
+    }
+
+    if (ringbuffer.pop() != 12) {
+        return 1;
+    }
+
+    if (!ringbuffer.empty()) {
+        return 1;
+    }
+
+    if (ringbuffer.pop().has_value()) {
         return 1;
     }
 

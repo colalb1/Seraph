@@ -200,7 +200,7 @@ namespace seraph {
 
         std::atomic<Node*> head_{nullptr};
         std::atomic<Node*> tail_{nullptr};
-        std::atomic<std::size_t> size_{0};
+        std::atomic<size_t> size_{0};
 
       public:
         queue() {
@@ -416,7 +416,7 @@ namespace seraph {
             return size_.load(std::memory_order_acquire) == 0;
         }
 
-        [[nodiscard]] auto size() const noexcept -> std::size_t {
+        [[nodiscard]] auto size() const noexcept -> size_t {
             return size_.load(std::memory_order_acquire);
         }
     };

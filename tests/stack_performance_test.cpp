@@ -38,7 +38,7 @@ namespace {
     struct BenchmarkSample {
         std::string implementation;
         std::string operation;
-        std::size_t iterations;
+        size_t iterations;
         int repeat_index;
         double total_ns;
         double nanoseconds_per_op;
@@ -48,7 +48,7 @@ namespace {
     struct BenchmarkAggregate {
         std::string implementation;
         std::string operation;
-        std::size_t iterations;
+        size_t iterations;
         int repeats;
         double avg_nanoseconds_per_op;
         double avg_ops_per_second;
@@ -92,7 +92,7 @@ namespace {
             return data_.empty();
         }
 
-        std::size_t size() const noexcept {
+        size_t size() const noexcept {
             return data_.size();
         }
 
@@ -140,7 +140,7 @@ namespace {
             return data_.empty();
         }
 
-        std::size_t size() const noexcept {
+        size_t size() const noexcept {
             std::lock_guard<std::mutex> guard(lock_);
             return data_.size();
         }
@@ -187,13 +187,13 @@ namespace {
             return data_.empty();
         }
 
-        std::size_t size() const noexcept {
+        size_t size() const noexcept {
             return size_.load(std::memory_order_relaxed);
         }
 
       private:
         boost::lockfree::stack<int> data_;
-        std::atomic<std::size_t> size_{0};
+        std::atomic<size_t> size_{0};
     };
 #endif
 
@@ -220,12 +220,12 @@ namespace {
     std::vector<BenchmarkSample> run_samples(
             std::string_view impl_name,
             std::string_view operation,
-            std::size_t iterations,
+            size_t iterations,
             int repeats,
             Fn&& fn
     ) {
         std::vector<BenchmarkSample> samples;
-        samples.reserve(static_cast<std::size_t>(repeats));
+        samples.reserve(static_cast<size_t>(repeats));
 
         for (int repeat = 0; repeat < repeats; ++repeat) {
             const auto start = Clock::now();
@@ -253,11 +253,11 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_push_copy(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_push_copy(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "push_copy", iterations, repeats, [iterations]() {
             StackType stack;
             const int value = 42;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 stack.push(value);
             }
             g_sink += stack.size();
@@ -266,10 +266,10 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_push_move(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_push_move(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "push_move", iterations, repeats, [iterations]() {
             StackType stack;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 int value = static_cast<int>(iii);
                 stack.push(std::move(value));
             }
@@ -279,10 +279,10 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_emplace(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_emplace(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "emplace", iterations, repeats, [iterations]() {
             StackType stack;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 stack.emplace(static_cast<int>(iii));
             }
             g_sink += stack.size();
@@ -291,15 +291,15 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_pop(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_pop(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "pop", iterations, repeats, [iterations]() {
             StackType stack;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 stack.emplace(static_cast<int>(iii));
             }
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 auto value = stack.pop();
                 if (value.has_value()) {
                     local_sum += static_cast<std::uint64_t>(*value);
@@ -311,15 +311,15 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_size(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_size(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "size", iterations, repeats, [iterations]() {
             StackType stack;
-            for (std::size_t iii = 0; iii < 1024; ++iii) {
+            for (size_t iii = 0; iii < 1024; ++iii) {
                 stack.emplace(static_cast<int>(iii));
             }
 
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 local_sum += stack.size();
             }
             g_sink += local_sum;
@@ -328,12 +328,12 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_empty(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_empty(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "empty", iterations, repeats, [iterations]() {
             StackType stack;
             stack.emplace(1);
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 local_sum += static_cast<std::uint64_t>(stack.empty());
             }
             g_sink += local_sum;
@@ -342,12 +342,12 @@ namespace {
 
     template <typename StackType>
     std::vector<BenchmarkSample>
-    bench_top(std::string_view impl_name, std::size_t iterations, int repeats) {
+    bench_top(std::string_view impl_name, size_t iterations, int repeats) {
         return run_samples(impl_name, "top", iterations, repeats, [iterations]() {
             StackType stack;
             stack.emplace(7);
             std::uint64_t local_sum = 0;
-            for (std::size_t iii = 0; iii < iterations; ++iii) {
+            for (size_t iii = 0; iii < iterations; ++iii) {
                 auto value = stack.top();
                 if (value.has_value()) {
                     local_sum += static_cast<std::uint64_t>(*value);
@@ -357,10 +357,10 @@ namespace {
         });
     }
 
-    std::vector<BenchmarkSample> bench_reserve_stack(std::size_t iterations, int repeats) {
+    std::vector<BenchmarkSample> bench_reserve_stack(size_t iterations, int repeats) {
         return run_samples("stack", "reserve", iterations, repeats, [iterations]() {
             seraph::stack<int> stack;
-            for (std::size_t iii = 1; iii <= iterations; ++iii) {
+            for (size_t iii = 1; iii <= iterations; ++iii) {
                 stack.reserve(iii);
             }
             g_sink += stack.size();
@@ -378,10 +378,10 @@ namespace {
             std::string_view impl_name,
             int thread_count,
             int push_percent,
-            std::size_t ops_per_thread,
+            size_t ops_per_thread,
             int repeats
     ) {
-        const std::size_t total_ops = static_cast<std::size_t>(thread_count) * ops_per_thread;
+        const size_t total_ops = static_cast<size_t>(thread_count) * ops_per_thread;
         const std::string op_label = make_contention_operation_label(thread_count, push_percent);
         return run_samples(
                 impl_name,
@@ -390,8 +390,7 @@ namespace {
                 repeats,
                 [thread_count, push_percent, ops_per_thread]() {
                     StackType stack;
-                    for (std::size_t iii = 0;
-                         iii < static_cast<std::size_t>(thread_count) * ops_per_thread;
+                    for (size_t iii = 0; iii < static_cast<size_t>(thread_count) * ops_per_thread;
                          ++iii) {
                         stack.emplace(static_cast<int>(iii));
                     }
@@ -400,7 +399,7 @@ namespace {
                     std::atomic<std::uint64_t> pop_sum{0};
 
                     std::vector<std::thread> workers;
-                    workers.reserve(static_cast<std::size_t>(thread_count));
+                    workers.reserve(static_cast<size_t>(thread_count));
 
                     for (int thread_index = 0; thread_index < thread_count; ++thread_index) {
                         workers.emplace_back([&, thread_index]() {
@@ -409,7 +408,7 @@ namespace {
                             std::uint64_t local_sum = 0;
 
                             sync_start.arrive_and_wait();
-                            for (std::size_t iii = 0; iii < ops_per_thread; ++iii) {
+                            for (size_t iii = 0; iii < ops_per_thread; ++iii) {
                                 seed ^= seed << 13;
                                 seed ^= seed >> 7;
                                 seed ^= seed << 17;
@@ -417,7 +416,7 @@ namespace {
                                 const int roll = static_cast<int>(seed % 100ULL);
                                 if (roll < push_percent) {
                                     stack.push(static_cast<int>(
-                                            iii ^ static_cast<std::size_t>(thread_index)
+                                            iii ^ static_cast<size_t>(thread_index)
                                     ));
                                 }
                                 else {
@@ -451,10 +450,10 @@ namespace {
     std::vector<BenchmarkSample> bench_mt_push_only(
             std::string_view impl_name,
             int thread_count,
-            std::size_t ops_per_thread,
+            size_t ops_per_thread,
             int repeats
     ) {
-        const std::size_t total_ops = static_cast<std::size_t>(thread_count) * ops_per_thread;
+        const size_t total_ops = static_cast<size_t>(thread_count) * ops_per_thread;
         const std::string op_label = make_mt_simple_operation_label("push_only", thread_count);
         return run_samples(
                 impl_name,
@@ -465,15 +464,14 @@ namespace {
                     StackType stack;
                     std::barrier sync_start(thread_count + 1);
                     std::vector<std::thread> workers;
-                    workers.reserve(static_cast<std::size_t>(thread_count));
+                    workers.reserve(static_cast<size_t>(thread_count));
 
                     for (int thread_index = 0; thread_index < thread_count; ++thread_index) {
                         workers.emplace_back([&, thread_index]() {
                             sync_start.arrive_and_wait();
-                            for (std::size_t iii = 0; iii < ops_per_thread; ++iii) {
-                                stack.push(static_cast<int>(
-                                        iii + static_cast<std::size_t>(thread_index)
-                                ));
+                            for (size_t iii = 0; iii < ops_per_thread; ++iii) {
+                                stack.push(static_cast<int>(iii + static_cast<size_t>(thread_index))
+                                );
                             }
                         });
                     }
@@ -491,10 +489,10 @@ namespace {
     std::vector<BenchmarkSample> bench_mt_pop_only(
             std::string_view impl_name,
             int thread_count,
-            std::size_t ops_per_thread,
+            size_t ops_per_thread,
             int repeats
     ) {
-        const std::size_t total_ops = static_cast<std::size_t>(thread_count) * ops_per_thread;
+        const size_t total_ops = static_cast<size_t>(thread_count) * ops_per_thread;
         const std::string op_label = make_mt_simple_operation_label("pop_only", thread_count);
         return run_samples(
                 impl_name,
@@ -503,20 +501,20 @@ namespace {
                 repeats,
                 [thread_count, ops_per_thread, total_ops]() {
                     StackType stack;
-                    for (std::size_t iii = 0; iii < total_ops; ++iii) {
+                    for (size_t iii = 0; iii < total_ops; ++iii) {
                         stack.emplace(static_cast<int>(iii));
                     }
 
                     std::barrier sync_start(thread_count + 1);
                     std::atomic<std::uint64_t> pop_sum{0};
                     std::vector<std::thread> workers;
-                    workers.reserve(static_cast<std::size_t>(thread_count));
+                    workers.reserve(static_cast<size_t>(thread_count));
 
                     for (int thread_index = 0; thread_index < thread_count; ++thread_index) {
                         workers.emplace_back([&, thread_index]() {
                             std::uint64_t local_sum = 0;
                             sync_start.arrive_and_wait();
-                            for (std::size_t iii = 0; iii < ops_per_thread; ++iii) {
+                            for (size_t iii = 0; iii < ops_per_thread; ++iii) {
                                 auto value = stack.pop();
                                 if (value.has_value()) {
                                     local_sum += static_cast<std::uint64_t>(*value);
@@ -694,7 +692,7 @@ namespace {
             << (width - margin_right) << "\" y2=\"" << (height - margin_bottom)
             << "\" stroke=\"#222222\" stroke-width=\"2\"/>\n";
 
-        for (std::size_t op_idx = 0; op_idx < operations.size(); ++op_idx) {
+        for (size_t op_idx = 0; op_idx < operations.size(); ++op_idx) {
             const std::string& op = operations[op_idx];
             const double group_start = margin_left + static_cast<double>(op_idx) * group_w;
             const double center = group_start + group_w / 2.0;
@@ -711,7 +709,7 @@ namespace {
                 }
             }
 
-            for (std::size_t impl_idx = 0; impl_idx < present_impls.size(); ++impl_idx) {
+            for (size_t impl_idx = 0; impl_idx < present_impls.size(); ++impl_idx) {
                 const std::string& impl = present_impls[impl_idx];
                 const auto impl_it = op_it->second.find(impl);
                 const double metric = impl_it->second;
@@ -767,8 +765,8 @@ namespace {
             return false;
         }
 
-        const std::size_t push_pos = operation.find("_push");
-        const std::size_t pop_pos = operation.find("_pop");
+        const size_t push_pos = operation.find("_push");
+        const size_t pop_pos = operation.find("_pop");
         if (push_pos == std::string::npos || pop_pos == std::string::npos || pop_pos <= push_pos) {
             return false;
         }
@@ -788,7 +786,7 @@ namespace {
         return true;
     }
 
-    std::string color_for_series_index(std::size_t index) {
+    std::string color_for_series_index(size_t index) {
         static const std::vector<std::string> palette = {
                 "#1d3557",
                 "#e76f51",
@@ -884,8 +882,7 @@ namespace {
 
         auto x_for_threads = [&](int threads) {
             const auto it = std::find(thread_counts.begin(), thread_counts.end(), threads);
-            const std::size_t idx =
-                    static_cast<std::size_t>(std::distance(thread_counts.begin(), it));
+            const size_t idx = static_cast<size_t>(std::distance(thread_counts.begin(), it));
             const double frac = thread_counts.size() == 1
                                         ? 0.0
                                         : static_cast<double>(idx) /
@@ -902,7 +899,7 @@ namespace {
         }
 
         int legend_y = 90;
-        std::size_t series_index = 0;
+        size_t series_index = 0;
         for (const auto& [key, points] : series) {
             const std::string color = color_for_series_index(series_index);
 
@@ -1033,8 +1030,7 @@ namespace {
 
         auto x_for_threads = [&](int threads) {
             const auto it = std::find(thread_counts.begin(), thread_counts.end(), threads);
-            const std::size_t idx =
-                    static_cast<std::size_t>(std::distance(thread_counts.begin(), it));
+            const size_t idx = static_cast<size_t>(std::distance(thread_counts.begin(), it));
             const double frac = thread_counts.size() == 1
                                         ? 0.0
                                         : static_cast<double>(idx) /
@@ -1051,7 +1047,7 @@ namespace {
         }
 
         int legend_y = 90;
-        std::size_t series_index = 0;
+        size_t series_index = 0;
         for (const auto& [key, points] : series) {
             const std::string color = color_for_series_index(series_index);
 
@@ -1104,10 +1100,10 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    const std::size_t iterations = quick ? 20'000 : 300'000;
+    const size_t iterations = quick ? 20'000 : 300'000;
     const int repeats = quick ? 2 : 5;
-    const std::size_t contention_ops_per_thread = quick ? 10'000 : 100'000;
-    const std::size_t specialized_ops_per_thread = quick ? 15'000 : 150'000;
+    const size_t contention_ops_per_thread = quick ? 10'000 : 100'000;
+    const size_t specialized_ops_per_thread = quick ? 15'000 : 150'000;
 
     std::vector<BenchmarkSample> samples;
     samples.reserve(256);

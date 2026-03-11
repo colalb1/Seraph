@@ -56,6 +56,12 @@ if(SERAPH_BUILD_TESTS)
     )
     target_link_libraries(seraph_queue_perf PRIVATE seraph::seraph)
 
+    add_executable(seraph_linearizability_tests
+        tests/linearizability_test.cpp
+    )
+    target_link_libraries(seraph_linearizability_tests PRIVATE seraph::seraph)
+    add_test(NAME seraph_linearizability_tests COMMAND seraph_linearizability_tests)
+
     find_package(Boost CONFIG QUIET)
     if(Boost_FOUND)
         if(TARGET Boost::headers)
