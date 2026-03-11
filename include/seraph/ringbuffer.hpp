@@ -219,8 +219,8 @@ namespace seraph {
             size_t position(dequeue_pos_.value.load(std::memory_order_relaxed));
             size_t spins{0};
 
-            // Intentionally unbounded: retries under contention, exits on empty or successful
-            // claim.
+            // Intentionally unbounded: retries under contention, exits on empty once no
+            // in-flight enqueues remain, or on successful claim.
             while (true) {
                 Slot& slot(slot_for(position));
                 const size_t sequence(slot.sequence.load(std::memory_order_acquire));
@@ -262,7 +262,15 @@ namespace seraph {
                 }
 
                 if (diff < 0) {
-                    return std::nullopt;
+                    const size_t tail(enqueue_pos_.value.load(std::memory_order_acquire));
+
+                    if (tail == position) {
+                        return std::nullopt;
+                    }
+
+                    cpu_relax_or_yield(spins);
+                    position = dequeue_pos_.value.load(std::memory_order_relaxed);
+                    continue;
                 }
 
                 cpu_relax_or_yield(spins);
