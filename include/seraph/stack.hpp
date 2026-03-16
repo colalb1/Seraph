@@ -28,10 +28,10 @@ namespace seraph {
                 std::hardware_destructive_interference_size
         };
 #else
-        static constexpr size_t k_destructive_interference_size{64};
+        static constexpr size_t k_destructive_interference_size{128};
 #endif
 
-        struct Node {
+        struct alignas(k_destructive_interference_size) Node {
             T value;
             Node* next;
 
@@ -281,12 +281,16 @@ namespace seraph {
         mutable Spinlock spin_lock_;
         std::vector<T> spin_data_;
 
-        std::atomic<Node*> cas_head_{nullptr};
-        std::atomic<size_t> cas_size_{0};
-        std::atomic<bool> using_cas_{false};
+        alignas(k_destructive_interference_size) std::atomic<Node*> cas_head_{nullptr};
+        alignas(k_destructive_interference_size) std::atomic<size_t> cas_size_{0};
+
+        alignas(k_destructive_interference_size) std::atomic<size_t> active_ops_{0};
+        alignas(k_destructive_interference_size) std::atomic<size_t> contention_streak_{0};
+
+        alignas(k_destructive_interference_size) std::atomic<bool> using_cas_{false};
+        std::atomic<bool> promotion_requested_{false};
 
         const size_t contention_thread_threshold_;
-        const size_t promotion_streak_threshold_;
 
         std::atomic<size_t> active_ops_{0};
         std::atomic<size_t> contention_streak_{0};
