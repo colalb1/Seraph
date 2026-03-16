@@ -6,7 +6,6 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
-#include <exception>
 #include <mutex>
 #include <new>
 #include <optional>
@@ -38,6 +37,53 @@ namespace seraph {
             template <typename... Args>
             Node(Node* n, Args&&... args) : value(std::forward<Args>(args)...), next(n) {}
         };
+
+        class NodePool {
+            struct alignas(k_destructive_interference_size) FreeNode {
+                FreeNode* next;
+            };
+
+            std::atomic<FreeNode*> free_list_{nullptr};
+
+          public:
+            Node* acquire(Node* next_node, auto&&... args) {
+                FreeNode* old_node(free_list_.load(std::memory_order_acquire));
+
+                while (old_node) {
+                    if (free_list_.compare_exchange_weak(
+                                old_node,
+                                old_node->next,
+                                std::memory_order_acq_rel,
+                                std::memory_order_acquire
+                        ))
+                        return new (old_node)
+                                Node(next_node, std::forward<decltype(args)>(args)...);
+                }
+                // Pool empty
+                void* mem = ::operator new(
+                        sizeof(Node),
+                        std::align_val_t{k_destructive_interference_size}
+                );
+                return new (mem) Node(next_node, std::forward<decltype(args)>(args)...);
+            }
+
+            void release(Node* node) {
+                node->~Node();
+                auto* free_node(reinterpret_cast<FreeNode*>(node));
+                FreeNode* old_node(free_list_.load(std::memory_order_relaxed));
+
+                do {
+                    free_node->next = old_node;
+                } while (!free_list_.compare_exchange_weak(
+                        old_node,
+                        free_node,
+                        std::memory_order_release,
+                        std::memory_order_relaxed
+                ));
+            }
+        };
+
+        static NodePool node_pool_;
 
         struct alignas(k_destructive_interference_size) HazardRecord {
             std::atomic<std::thread::id> owner;
@@ -125,10 +171,9 @@ namespace seraph {
                     retire_list_[write_index++] = retired_node;
                 }
                 else {
-                    delete retired_node;
+                    node_pool_.release(retired_node);
                 }
             }
-
             retire_list_.resize(write_index);
         }
 
@@ -141,7 +186,7 @@ namespace seraph {
         }
 
         template <typename... Args> void cas_emplace_impl(Args&&... args) {
-            Node* new_node(new Node(nullptr, std::forward<Args>(args)...));
+            Node* new_node(node_pool_.acquire(nullptr, std::forward<Args>(args)...));
             Node* old_head(cas_head_.load(std::memory_order_relaxed));
 
             do {
@@ -225,7 +270,7 @@ namespace seraph {
 
             while (node) {
                 Node* next = node->next;
-                delete node;
+                node_pool_.release(node);
                 node = next;
             }
 
@@ -333,19 +378,24 @@ namespace seraph {
         }
 
         void push(const T& value) {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                cas_emplace_impl(value);
-            }
-            else {
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    cas_emplace_impl(value);
+                    return;
+                }
+
                 T temp(value);
                 SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(temp));
+                return;
             }
+
+            cas_emplace_impl(value);
         }
 
         void push(T&& value) {
