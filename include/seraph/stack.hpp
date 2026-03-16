@@ -278,7 +278,7 @@ namespace seraph {
 
         mutable std::shared_mutex mode_mutex_;
 
-        mutable Spinlock spin_lock_;
+        alignas(k_destructive_interference_size) mutable Spinlock spin_lock_;
         std::vector<T> spin_data_;
 
         alignas(k_destructive_interference_size) std::atomic<Node*> cas_head_{nullptr};
