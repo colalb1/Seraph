@@ -22,13 +22,13 @@ namespace seraph {
                 std::hardware_destructive_interference_size
         };
 #else
-        static constexpr size_t k_destructive_interference_size{64};
+        static constexpr size_t k_destructive_interference_size{128};
 #endif
 
         static constexpr size_t k_backoff_batch{32};
         static_assert((k_backoff_batch & (k_backoff_batch - 1)) == 0);
 
-        struct Slot {
+        struct alignas(k_destructive_interference_size) Slot {
             std::atomic<size_t> sequence{0};
             mutable std::atomic<std::uint32_t> readers{0};
             std::optional<T> value{};
@@ -165,9 +165,9 @@ namespace seraph {
         std::vector<Slot> slots_{};
         std::vector<Slot*> mirrored_slots_{};
 
-        Cursor enqueue_pos_{};
-        Cursor dequeue_pos_{};
-        Cursor size_{};
+        alignas(k_destructive_interference_size) Cursor enqueue_pos_{};
+        alignas(k_destructive_interference_size) Cursor dequeue_pos_{};
+        alignas(k_destructive_interference_size) Cursor size_{};
 
       public:
         explicit RingBuffer(size_t data_size)
@@ -317,12 +317,15 @@ namespace seraph {
             return std::nullopt;
         }
 
-        [[nodiscard]] bool empty() const noexcept {
-            return size_.value.load(std::memory_order_acquire) == 0;
+        [[nodiscard]] size_t size() const noexcept {
+            const size_t enq(enqueue_pos_.value.load(std::memory_order_acquire));
+            const size_t deq(dequeue_pos_.value.load(std::memory_order_acquire));
+
+            return enq - deq;
         }
 
-        [[nodiscard]] size_t size() const noexcept {
-            return size_.value.load(std::memory_order_acquire);
+        [[nodiscard]] bool empty() const noexcept {
+            return size() == 0;
         }
     };
 } // namespace seraph

@@ -6,7 +6,6 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
-#include <exception>
 #include <mutex>
 #include <new>
 #include <optional>
@@ -28,16 +27,63 @@ namespace seraph {
                 std::hardware_destructive_interference_size
         };
 #else
-        static constexpr size_t k_destructive_interference_size{64};
+        static constexpr size_t k_destructive_interference_size{128};
 #endif
 
-        struct Node {
+        struct alignas(k_destructive_interference_size) Node {
             T value;
             Node* next;
 
             template <typename... Args>
             Node(Node* n, Args&&... args) : value(std::forward<Args>(args)...), next(n) {}
         };
+
+        class NodePool {
+            struct alignas(k_destructive_interference_size) FreeNode {
+                FreeNode* next;
+            };
+
+            std::atomic<FreeNode*> free_list_{nullptr};
+
+          public:
+            Node* acquire(Node* next_node, auto&&... args) {
+                FreeNode* old_node(free_list_.load(std::memory_order_acquire));
+
+                while (old_node) {
+                    if (free_list_.compare_exchange_weak(
+                                old_node,
+                                old_node->next,
+                                std::memory_order_acq_rel,
+                                std::memory_order_acquire
+                        ))
+                        return new (old_node)
+                                Node(next_node, std::forward<decltype(args)>(args)...);
+                }
+                // Pool empty
+                void* mem = ::operator new(
+                        sizeof(Node),
+                        std::align_val_t{k_destructive_interference_size}
+                );
+                return new (mem) Node(next_node, std::forward<decltype(args)>(args)...);
+            }
+
+            void release(Node* node) {
+                node->~Node();
+                auto* free_node(reinterpret_cast<FreeNode*>(node));
+                FreeNode* old_node(free_list_.load(std::memory_order_relaxed));
+
+                do {
+                    free_node->next = old_node;
+                } while (!free_list_.compare_exchange_weak(
+                        old_node,
+                        free_node,
+                        std::memory_order_release,
+                        std::memory_order_relaxed
+                ));
+            }
+        };
+
+        static NodePool node_pool_;
 
         struct alignas(k_destructive_interference_size) HazardRecord {
             std::atomic<std::thread::id> owner;
@@ -57,7 +103,7 @@ namespace seraph {
         // 16 used as this will run on 4-threads. Reduces hazard-table scan traffic.
         // 4 threads allows one hazard slot per active thread.
         static constexpr size_t k_max_hazard_pointers{16};
-        static constexpr size_t k_retire_scan_threshold{64};
+        static constexpr size_t k_retire_scan_threshold{8};
         static HazardRecord hazard_records_[k_max_hazard_pointers];
         static thread_local HazardRecord* local_hazard_;
         static thread_local HazardReleaser hazard_releaser_;
@@ -65,19 +111,17 @@ namespace seraph {
 
         class ActiveOperationScope {
           public:
-            explicit ActiveOperationScope(stack& stack) : stack_(stack) {
-                const size_t active_now(
-                        stack_.active_ops_.fetch_add(1, std::memory_order_relaxed) + 1
-                );
-                stack_.observe_contention(active_now);
+            explicit ActiveOperationScope(stack& s) : stack_(&s) {
+                const size_t active_now = s.active_ops_.fetch_add(1, std::memory_order_relaxed) + 1;
+                s.observe_contention(active_now);
             }
-
             ~ActiveOperationScope() {
-                stack_.active_ops_.fetch_sub(1, std::memory_order_relaxed);
+                if (stack_)
+                    stack_->active_ops_.fetch_sub(1, std::memory_order_relaxed);
             }
 
           private:
-            stack& stack_;
+            stack* stack_;
         };
 
         static HazardRecord* acquire_hazard() {
@@ -127,10 +171,9 @@ namespace seraph {
                     retire_list_[write_index++] = retired_node;
                 }
                 else {
-                    delete retired_node;
+                    node_pool_.release(retired_node);
                 }
             }
-
             retire_list_.resize(write_index);
         }
 
@@ -143,7 +186,7 @@ namespace seraph {
         }
 
         template <typename... Args> void cas_emplace_impl(Args&&... args) {
-            Node* new_node(new Node(nullptr, std::forward<Args>(args)...));
+            Node* new_node(node_pool_.acquire(nullptr, std::forward<Args>(args)...));
             Node* old_head(cas_head_.load(std::memory_order_relaxed));
 
             do {
@@ -165,8 +208,10 @@ namespace seraph {
             while (old_head) {
                 hazard->pointer.store(old_head, std::memory_order_release);
 
-                if (cas_head_.load(std::memory_order_acquire) != old_head) {
-                    old_head = cas_head_.load(std::memory_order_acquire);
+                Node* current = cas_head_.load(std::memory_order_acquire);
+
+                if (current != old_head) {
+                    old_head = current;
                     continue;
                 }
 
@@ -225,7 +270,7 @@ namespace seraph {
 
             while (node) {
                 Node* next = node->next;
-                delete node;
+                node_pool_.release(node);
                 node = next;
             }
 
@@ -278,19 +323,20 @@ namespace seraph {
 
         mutable std::shared_mutex mode_mutex_;
 
-        mutable Spinlock spin_lock_;
+        alignas(k_destructive_interference_size) mutable Spinlock spin_lock_;
         std::vector<T> spin_data_;
 
-        std::atomic<Node*> cas_head_{nullptr};
-        std::atomic<size_t> cas_size_{0};
-        std::atomic<bool> using_cas_{false};
+        alignas(k_destructive_interference_size) std::atomic<Node*> cas_head_{nullptr};
+        alignas(k_destructive_interference_size) std::atomic<size_t> cas_size_{0};
+
+        alignas(k_destructive_interference_size) std::atomic<size_t> active_ops_{0};
+        alignas(k_destructive_interference_size) std::atomic<size_t> contention_streak_{0};
+
+        alignas(k_destructive_interference_size) std::atomic<bool> using_cas_{false};
+        std::atomic<bool> promotion_requested_{false};
 
         const size_t contention_thread_threshold_;
         const size_t promotion_streak_threshold_;
-
-        std::atomic<size_t> active_ops_{0};
-        std::atomic<size_t> contention_streak_{0};
-        std::atomic<bool> promotion_requested_{false};
 
       public:
         stack()
@@ -332,71 +378,92 @@ namespace seraph {
         }
 
         void push(const T& value) {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                cas_emplace_impl(value);
-            }
-            else {
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    cas_emplace_impl(value);
+                    return;
+                }
+
                 T temp(value);
                 SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(temp));
+                return;
             }
+
+            cas_emplace_impl(value);
         }
 
         void push(T&& value) {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                cas_emplace_impl(std::move(value));
-            }
-            else {
+                // Rechecking as promotion may have happened
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    cas_emplace_impl(std::move(value));
+                    return;
+                }
+
                 SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(value));
+                return;
             }
+
+            cas_emplace_impl(std::move(value));
         }
 
         template <typename... Args> void emplace(Args&&... args) {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                cas_emplace_impl(std::forward<Args>(args)...);
-            }
-            else {
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    cas_emplace_impl(std::forward<Args>(args)...);
+                    return;
+                }
+
                 T temp(std::forward<Args>(args)...);
                 SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(temp));
+
+                return;
             }
+
+            cas_emplace_impl(std::forward<Args>(args)...);
         }
 
         std::optional<T> pop() {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                return cas_pop_impl();
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    return cas_pop_impl();
+                }
+
+                SpinlockGuard guard(spin_lock_);
+
+                if (spin_data_.empty()) {
+                    return std::nullopt;
+                }
+
+                std::optional<T> result(std::move(spin_data_.back()));
+                spin_data_.pop_back();
+                return result;
             }
 
-            SpinlockGuard guard(spin_lock_);
-
-            if (spin_data_.empty()) {
-                return std::nullopt;
-            }
-
-            std::optional<T> result(std::move(spin_data_.back()));
-            spin_data_.pop_back();
-            return result;
+            return cas_pop_impl();
         }
 
         std::optional<T> top() const {
@@ -447,5 +514,7 @@ namespace seraph {
     template <typename T> thread_local typename stack<T>::HazardReleaser stack<T>::hazard_releaser_;
 
     template <typename T> thread_local std::vector<typename stack<T>::Node*> stack<T>::retire_list_;
+
+    template <typename T> typename stack<T>::NodePool stack<T>::node_pool_;
 
 } // namespace seraph

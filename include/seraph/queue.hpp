@@ -19,7 +19,7 @@ namespace seraph {
                 std::hardware_destructive_interference_size
         };
 #else
-        static constexpr size_t k_destructive_interference_size{64};
+        static constexpr size_t k_destructive_interference_size{128};
 #endif
 
         struct Node {
@@ -55,8 +55,8 @@ namespace seraph {
         static constexpr size_t k_max_hazard_pointers{32};
         static constexpr size_t k_local_hazard_slots{2};
         static constexpr size_t k_hazard_clear_interval{64};
-        static constexpr size_t k_retire_scan_threshold{256};
-        static constexpr size_t k_retire_scan_budget{16};
+        static constexpr size_t k_retire_scan_threshold{16};
+        static constexpr size_t k_retire_scan_budget{8};
 
         static HazardRecord hazard_records_[k_max_hazard_pointers];
         static thread_local std::array<HazardRecord*, k_local_hazard_slots> local_hazards_;
@@ -198,9 +198,9 @@ namespace seraph {
             retire_list_.clear();
         }
 
-        std::atomic<Node*> head_{nullptr};
-        std::atomic<Node*> tail_{nullptr};
-        std::atomic<size_t> size_{0};
+        alignas(k_destructive_interference_size) std::atomic<Node*> head_{nullptr};
+        alignas(k_destructive_interference_size) std::atomic<Node*> tail_{nullptr};
+        alignas(k_destructive_interference_size) std::atomic<size_t> size_{0};
 
       public:
         queue() {
@@ -240,7 +240,9 @@ namespace seraph {
                 Node* tail(tail_.load(std::memory_order_acquire));
                 hazard_tail->pointer.store(tail, std::memory_order_release);
 
-                if (tail != tail_.load(std::memory_order_acquire)) {
+                Node* tail_check = tail_.load(std::memory_order_acquire);
+                if (tail != tail_check) {
+                    tail = tail_check;
                     continue;
                 }
 
@@ -364,51 +366,21 @@ namespace seraph {
         }
 
         [[nodiscard]] auto back() const -> std::optional<T> {
-            HazardRecord* hazard_curr(acquire_hazard(0));
-            HazardRecord* hazard_next(acquire_hazard(1));
+            HazardRecord* hazard(acquire_hazard(0));
 
             while (true) {
-                Node* head(head_.load(std::memory_order_acquire));
-                hazard_curr->pointer.store(head, std::memory_order_release);
+                Node* tail = tail_.load(std::memory_order_acquire);
+                hazard->pointer.store(tail, std::memory_order_release);
 
-                if (head != head_.load(std::memory_order_acquire)) {
+                if (tail != tail_.load(std::memory_order_acquire)) {
                     continue;
                 }
-
-                Node* current(head->next.load(std::memory_order_acquire));
-                hazard_next->pointer.store(current, std::memory_order_release);
-
-                if (head != head_.load(std::memory_order_acquire)) {
-                    continue;
+                if (tail->value) {
+                    return *(tail->value);
                 }
 
-                if (current == nullptr) {
-                    maybe_clear_local_hazard_pointers();
-                    return std::nullopt;
-                }
-
-                hazard_curr->pointer.store(current, std::memory_order_release);
-                hazard_next->pointer.store(nullptr, std::memory_order_release);
-
-                while (true) {
-                    Node* next(current->next.load(std::memory_order_acquire));
-
-                    if (next == nullptr) {
-                        std::optional<T> result(*(current->value));
-                        maybe_clear_local_hazard_pointers();
-                        return result;
-                    }
-
-                    hazard_next->pointer.store(next, std::memory_order_release);
-
-                    if (current->next.load(std::memory_order_acquire) != next) {
-                        continue;
-                    }
-
-                    current = next;
-                    hazard_curr->pointer.store(current, std::memory_order_release);
-                    hazard_next->pointer.store(nullptr, std::memory_order_release);
-                }
+                maybe_clear_local_hazard_pointers();
+                return std::nullopt;
             }
         }
 
