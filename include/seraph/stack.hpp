@@ -291,10 +291,7 @@ namespace seraph {
         std::atomic<bool> promotion_requested_{false};
 
         const size_t contention_thread_threshold_;
-
-        std::atomic<size_t> active_ops_{0};
-        std::atomic<size_t> contention_streak_{0};
-        std::atomic<bool> promotion_requested_{false};
+        const size_t promotion_streak_threshold_;
 
       public:
         stack()
