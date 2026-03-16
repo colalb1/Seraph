@@ -206,7 +206,7 @@ namespace seraph {
             Node* old_head(cas_head_.load(std::memory_order_acquire));
 
             while (old_head) {
-                hazard->pointer.store(old_head, memory_order_release);
+                hazard->pointer.store(old_head, std::memory_order_release);
 
                 Node* current = cas_head_.load(std::memory_order_acquire);
 
