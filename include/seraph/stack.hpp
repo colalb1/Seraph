@@ -515,4 +515,6 @@ namespace seraph {
 
     template <typename T> thread_local std::vector<typename stack<T>::Node*> stack<T>::retire_list_;
 
+    template <typename T> typename stack<T>::NodePool stack<T>::node_pool_;
+
 } // namespace seraph
