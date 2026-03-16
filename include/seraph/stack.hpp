@@ -57,7 +57,7 @@ namespace seraph {
         // 16 used as this will run on 4-threads. Reduces hazard-table scan traffic.
         // 4 threads allows one hazard slot per active thread.
         static constexpr size_t k_max_hazard_pointers{16};
-        static constexpr size_t k_retire_scan_threshold{64};
+        static constexpr size_t k_retire_scan_threshold{8};
         static HazardRecord hazard_records_[k_max_hazard_pointers];
         static thread_local HazardRecord* local_hazard_;
         static thread_local HazardReleaser hazard_releaser_;
@@ -65,19 +65,17 @@ namespace seraph {
 
         class ActiveOperationScope {
           public:
-            explicit ActiveOperationScope(stack& stack) : stack_(stack) {
-                const size_t active_now(
-                        stack_.active_ops_.fetch_add(1, std::memory_order_relaxed) + 1
-                );
-                stack_.observe_contention(active_now);
+            explicit ActiveOperationScope(stack& s) : stack_(&s) {
+                const size_t active_now = s.active_ops_.fetch_add(1, std::memory_order_relaxed) + 1;
+                s.observe_contention(active_now);
             }
-
             ~ActiveOperationScope() {
-                stack_.active_ops_.fetch_sub(1, std::memory_order_relaxed);
+                if (stack_)
+                    stack_->active_ops_.fetch_sub(1, std::memory_order_relaxed);
             }
 
           private:
-            stack& stack_;
+            stack* stack_;
         };
 
         static HazardRecord* acquire_hazard() {
@@ -163,10 +161,12 @@ namespace seraph {
             Node* old_head(cas_head_.load(std::memory_order_acquire));
 
             while (old_head) {
-                hazard->pointer.store(old_head, std::memory_order_release);
+                hazard->pointer.store(old_head, memory_order_release);
 
-                if (cas_head_.load(std::memory_order_acquire) != old_head) {
-                    old_head = cas_head_.load(std::memory_order_acquire);
+                Node* current = cas_head_.load(memory_order_acquire);
+
+                if (current != old_head) {
+                    old_head = current;
                     continue;
                 }
 
@@ -349,55 +349,71 @@ namespace seraph {
         }
 
         void push(T&& value) {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                cas_emplace_impl(std::move(value));
-            }
-            else {
+                // Rechecking as promotion may have happened
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    cas_emplace_impl(std::move(value));
+                    return;
+                }
+
                 SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(value));
+                return;
             }
+
+            cas_emplace_impl(std::move(value));
         }
 
         template <typename... Args> void emplace(Args&&... args) {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                cas_emplace_impl(std::forward<Args>(args)...);
-            }
-            else {
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    cas_emplace_impl(std::forward<Args>(args)...);
+                    return;
+                }
+
                 T temp(std::forward<Args>(args)...);
                 SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(temp));
+
+                return;
             }
+
+            cas_emplace_impl(std::forward<Args>(args)...);
         }
 
         std::optional<T> pop() {
-            ActiveOperationScope scope(*this);
-            maybe_promote_to_cas();
+            if (!using_cas_.load(std::memory_order_acquire)) {
+                ActiveOperationScope scope(*this);
+                maybe_promote_to_cas();
 
-            std::shared_lock mode_guard(mode_mutex_);
+                std::shared_lock mode_guard(mode_mutex_);
 
-            if (using_cas_.load(std::memory_order_acquire)) {
-                return cas_pop_impl();
+                if (using_cas_.load(std::memory_order_acquire)) {
+                    return cas_pop_impl();
+                }
+
+                SpinlockGuard guard(spin_lock_);
+
+                if (spin_data_.empty()) {
+                    return std::nullopt;
+                }
+
+                std::optional<T> result(std::move(spin_data_.back()));
+                spin_data_.pop_back();
+                return result;
             }
 
-            SpinlockGuard guard(spin_lock_);
-
-            if (spin_data_.empty()) {
-                return std::nullopt;
-            }
-
-            std::optional<T> result(std::move(spin_data_.back()));
-            spin_data_.pop_back();
-            return result;
+            return cas_pop_impl();
         }
 
         std::optional<T> top() const {
