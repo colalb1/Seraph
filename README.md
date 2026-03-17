@@ -19,6 +19,13 @@ Seraph is a C++ data-structure library for Apple ARM64.
 - [Design choice 2 and why it exists]
 - [Concurrency or memory-model note]
 
+## Implementation Notes
+
+- `queue` is a Michael–Scott lock‑free list; linearizability is enforced via CAS on `head/tail` and hazard pointers provide a safe memory‑reclamation scheme under the C++ atomics model.
+- `stack` is a two‑phase system: a mutexed vector for low contention, then a Treiber‑style CAS list after a contention‑streak threshold (a simple stochastic estimator that avoids premature promotion).
+- `RingBuffer` uses power‑of‑two capacity with sequence numbers as a monotone counter on `Z`, so slot state is tracked by congruence classes; a mirrored index set (size `2N`) makes `back()` a linear scan without modular wrap branches.
+- Cache‑line alignment reduces false sharing; per‑slot reader counts create a bounded critical section for peeks so `front/back` remain wait‑free with respect to the pop’s move/reset.
+
 ## Correctness & Safety
 
 - [Testing strategy or invariants]
