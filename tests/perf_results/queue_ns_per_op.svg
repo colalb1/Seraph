@@ -1,0 +1,223 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+<text x="640" y="40" text-anchor="middle" font-size="26" font-family="Menlo, monospace" fill="#111111">queue Performance Average: ns/op (lower is better)</text>
+<text x="28" y="315" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222222" transform="rotate(-90 28 315)">ns/op</text>
+<text x="665" y="702" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222222">operation</text>
+<line x1="90" y1="550" x2="1240" y2="550" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="554" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">0.00</text>
+<line x1="90" y1="456" x2="1240" y2="456" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="460" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">67.21</text>
+<line x1="90" y1="362" x2="1240" y2="362" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="366" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">134.4</text>
+<line x1="90" y1="268" x2="1240" y2="268" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="272" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">201.6</text>
+<line x1="90" y1="174" x2="1240" y2="174" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="178" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">268.8</text>
+<line x1="90" y1="80" x2="1240" y2="80" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="84" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">336.1</text>
+<line x1="90" y1="80" x2="90" y2="550" stroke="#222222" stroke-width="2"/>
+<line x1="90" y1="550" x2="1240" y2="550" stroke="#222222" stroke-width="2"/>
+<rect x="89.931" y="449.43" width="7.93103" height="100.57" fill="#e76f51"/>
+<text x="93.8966" y="443.43" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">71.91</text>
+<rect x="105.862" y="413.051" width="7.93103" height="136.949" fill="#2a9d8f"/>
+<text x="109.828" y="407.051" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">97.92</text>
+<rect x="121.793" y="353.479" width="7.93103" height="196.521" fill="#6a4c93"/>
+<text x="125.759" y="347.479" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">140.5</text>
+<text x="109.828" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 109.828 570)">contention_t2_push100_pop0</text>
+<rect x="129.586" y="448.424" width="7.93103" height="101.576" fill="#e76f51"/>
+<text x="133.552" y="442.424" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">72.63</text>
+<rect x="145.517" y="477.461" width="7.93103" height="72.5386" fill="#2a9d8f"/>
+<text x="149.483" y="471.461" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">51.87</text>
+<rect x="161.448" y="435.23" width="7.93103" height="114.77" fill="#6a4c93"/>
+<text x="165.414" y="429.23" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">82.06</text>
+<text x="149.483" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 149.483 570)">contention_t2_push10_pop90</text>
+<rect x="169.241" y="452.32" width="7.93103" height="97.6797" fill="#e76f51"/>
+<text x="173.207" y="446.32" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">69.84</text>
+<rect x="185.172" y="463.717" width="7.93103" height="86.2835" fill="#2a9d8f"/>
+<text x="189.138" y="457.717" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">61.69</text>
+<rect x="201.103" y="425.032" width="7.93103" height="124.968" fill="#6a4c93"/>
+<text x="205.069" y="419.032" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">89.35</text>
+<text x="189.138" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 189.138 570)">contention_t2_push20_pop80</text>
+<rect x="208.897" y="453.828" width="7.93103" height="96.1716" fill="#e76f51"/>
+<text x="212.862" y="447.828" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">68.76</text>
+<rect x="224.828" y="458.394" width="7.93103" height="91.6058" fill="#2a9d8f"/>
+<text x="228.793" y="452.394" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">65.50</text>
+<rect x="240.759" y="416.303" width="7.93103" height="133.697" fill="#6a4c93"/>
+<text x="244.724" y="410.303" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">95.59</text>
+<text x="228.793" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 228.793 570)">contention_t2_push50_pop50</text>
+<rect x="248.552" y="442.842" width="7.93103" height="107.158" fill="#e76f51"/>
+<text x="252.517" y="436.842" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">76.62</text>
+<rect x="264.483" y="436.219" width="7.93103" height="113.781" fill="#2a9d8f"/>
+<text x="268.448" y="430.219" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">81.35</text>
+<rect x="280.414" y="390.234" width="7.93103" height="159.766" fill="#6a4c93"/>
+<text x="284.379" y="384.234" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">114.2</text>
+<text x="268.448" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 268.448 570)">contention_t2_push80_pop20</text>
+<rect x="288.207" y="367.112" width="7.93103" height="182.888" fill="#e76f51"/>
+<text x="292.172" y="361.112" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">130.8</text>
+<rect x="304.138" y="347.236" width="7.93103" height="202.764" fill="#2a9d8f"/>
+<text x="308.103" y="341.236" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">145.0</text>
+<rect x="320.069" y="297.188" width="7.93103" height="252.812" fill="#6a4c93"/>
+<text x="324.034" y="291.188" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">180.8</text>
+<text x="308.103" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 308.103 570)">contention_t4_push100_pop0</text>
+<rect x="327.862" y="373.118" width="7.93103" height="176.882" fill="#e76f51"/>
+<text x="331.828" y="367.118" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">126.5</text>
+<rect x="343.793" y="400.638" width="7.93103" height="149.362" fill="#2a9d8f"/>
+<text x="347.759" y="394.638" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">106.8</text>
+<rect x="359.724" y="350.987" width="7.93103" height="199.013" fill="#6a4c93"/>
+<text x="363.69" y="344.987" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">142.3</text>
+<text x="347.759" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 347.759 570)">contention_t4_push10_pop90</text>
+<rect x="367.517" y="393.039" width="7.93103" height="156.961" fill="#e76f51"/>
+<text x="371.483" y="387.039" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">112.2</text>
+<rect x="383.448" y="401.669" width="7.93103" height="148.331" fill="#2a9d8f"/>
+<text x="387.414" y="395.669" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">106.1</text>
+<rect x="399.379" y="357.024" width="7.93103" height="192.976" fill="#6a4c93"/>
+<text x="403.345" y="351.024" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">138.0</text>
+<text x="387.414" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 387.414 570)">contention_t4_push20_pop80</text>
+<rect x="407.172" y="426.616" width="7.93103" height="123.384" fill="#e76f51"/>
+<text x="411.138" y="420.616" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">88.22</text>
+<rect x="423.103" y="427.1" width="7.93103" height="122.9" fill="#2a9d8f"/>
+<text x="427.069" y="421.1" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">87.87</text>
+<rect x="439.034" y="352.672" width="7.93103" height="197.328" fill="#6a4c93"/>
+<text x="443" y="346.672" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">141.1</text>
+<text x="427.069" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 427.069 570)">contention_t4_push50_pop50</text>
+<rect x="446.828" y="405.467" width="7.93103" height="144.533" fill="#e76f51"/>
+<text x="450.793" y="399.467" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">103.3</text>
+<rect x="462.759" y="380.591" width="7.93103" height="169.409" fill="#2a9d8f"/>
+<text x="466.724" y="374.591" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">121.1</text>
+<rect x="478.69" y="338.808" width="7.93103" height="211.192" fill="#6a4c93"/>
+<text x="482.655" y="332.808" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">151.0</text>
+<text x="466.724" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 466.724 570)">contention_t4_push80_pop20</text>
+<rect x="486.483" y="105.807" width="7.93103" height="444.193" fill="#e76f51"/>
+<text x="490.448" y="99.8069" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">317.6</text>
+<rect x="502.414" y="201.84" width="7.93103" height="348.16" fill="#2a9d8f"/>
+<text x="506.379" y="195.84" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">248.9</text>
+<rect x="518.345" y="127.598" width="7.93103" height="422.402" fill="#6a4c93"/>
+<text x="522.31" y="121.598" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">302.0</text>
+<text x="506.379" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 506.379 570)">contention_t8_push100_pop0</text>
+<rect x="526.138" y="161.44" width="7.93103" height="388.56" fill="#e76f51"/>
+<text x="530.103" y="155.44" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">277.8</text>
+<rect x="542.069" y="234.712" width="7.93103" height="315.288" fill="#2a9d8f"/>
+<text x="546.034" y="228.712" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">225.4</text>
+<rect x="558" y="115.031" width="7.93103" height="434.969" fill="#6a4c93"/>
+<text x="561.966" y="109.031" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">311.0</text>
+<text x="546.034" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 546.034 570)">contention_t8_push10_pop90</text>
+<rect x="565.793" y="195.367" width="7.93103" height="354.633" fill="#e76f51"/>
+<text x="569.759" y="189.367" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">253.6</text>
+<rect x="581.724" y="235.631" width="7.93103" height="314.369" fill="#2a9d8f"/>
+<text x="585.69" y="229.631" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">224.8</text>
+<rect x="597.655" y="108.444" width="7.93103" height="441.556" fill="#6a4c93"/>
+<text x="601.621" y="102.444" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">315.7</text>
+<text x="585.69" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 585.69 570)">contention_t8_push20_pop80</text>
+<rect x="605.448" y="292.985" width="7.93103" height="257.015" fill="#e76f51"/>
+<text x="609.414" y="286.985" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">183.8</text>
+<rect x="621.379" y="276.695" width="7.93103" height="273.305" fill="#2a9d8f"/>
+<text x="625.345" y="270.695" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">195.4</text>
+<rect x="637.31" y="122.284" width="7.93103" height="427.716" fill="#6a4c93"/>
+<text x="641.276" y="116.284" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">305.8</text>
+<text x="625.345" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 625.345 570)">contention_t8_push50_pop50</text>
+<rect x="645.103" y="188.069" width="7.93103" height="361.931" fill="#e76f51"/>
+<text x="649.069" y="182.069" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">258.8</text>
+<rect x="661.034" y="220.279" width="7.93103" height="329.721" fill="#2a9d8f"/>
+<text x="665" y="214.279" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">235.8</text>
+<rect x="676.966" y="208.581" width="7.93103" height="341.419" fill="#6a4c93"/>
+<text x="680.931" y="202.581" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">244.1</text>
+<text x="665" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 665 570)">contention_t8_push80_pop20</text>
+<rect x="684.759" y="507.138" width="7.93103" height="42.8617" fill="#e76f51"/>
+<text x="688.724" y="501.138" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">30.65</text>
+<rect x="700.69" y="528.956" width="7.93103" height="21.0437" fill="#2a9d8f"/>
+<text x="704.655" y="522.956" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">15.05</text>
+<rect x="716.621" y="509.716" width="7.93103" height="40.2836" fill="#6a4c93"/>
+<text x="720.586" y="503.716" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">28.80</text>
+<text x="704.655" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 704.655 570)">emplace</text>
+<rect x="724.414" y="521.043" width="7.93103" height="28.9569" fill="#e76f51"/>
+<text x="728.379" y="515.043" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">20.70</text>
+<rect x="740.345" y="549.688" width="7.93103" height="0.311535" fill="#2a9d8f"/>
+<text x="744.31" y="543.688" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">0.22</text>
+<rect x="756.276" y="549.217" width="7.93103" height="0.782821" fill="#6a4c93"/>
+<text x="760.241" y="543.217" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">0.56</text>
+<text x="744.31" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 744.31 570)">empty</text>
+<rect x="764.069" y="464.568" width="7.93103" height="85.4324" fill="#e76f51"/>
+<text x="768.034" y="458.568" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">61.08</text>
+<rect x="780" y="491.3" width="7.93103" height="58.6998" fill="#2a9d8f"/>
+<text x="783.966" y="485.3" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">41.97</text>
+<rect x="795.931" y="436.85" width="7.93103" height="113.15" fill="#6a4c93"/>
+<text x="799.897" y="430.85" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">80.90</text>
+<text x="783.966" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 783.966 570)">mt_pop_only_t2</text>
+<rect x="803.724" y="381.158" width="7.93103" height="168.842" fill="#e76f51"/>
+<text x="807.69" y="375.158" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">120.7</text>
+<rect x="819.655" y="407.572" width="7.93103" height="142.428" fill="#2a9d8f"/>
+<text x="823.621" y="401.572" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">101.8</text>
+<rect x="835.586" y="362.369" width="7.93103" height="187.631" fill="#6a4c93"/>
+<text x="839.552" y="356.369" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">134.2</text>
+<text x="823.621" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 823.621 570)">mt_pop_only_t4</text>
+<rect x="843.379" y="104.576" width="7.93103" height="445.424" fill="#e76f51"/>
+<text x="847.345" y="98.5761" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">318.5</text>
+<rect x="859.31" y="210.89" width="7.93103" height="339.11" fill="#2a9d8f"/>
+<text x="863.276" y="204.89" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">242.5</text>
+<rect x="875.241" y="80" width="7.93103" height="470" fill="#6a4c93"/>
+<text x="879.207" y="74" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">336.1</text>
+<text x="863.276" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 863.276 570)">mt_pop_only_t8</text>
+<rect x="883.034" y="452.078" width="7.93103" height="97.9222" fill="#e76f51"/>
+<text x="887" y="446.078" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">70.01</text>
+<rect x="898.966" y="427.496" width="7.93103" height="122.504" fill="#2a9d8f"/>
+<text x="902.931" y="421.496" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">87.59</text>
+<rect x="914.897" y="403.37" width="7.93103" height="146.63" fill="#6a4c93"/>
+<text x="918.862" y="397.37" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">104.8</text>
+<text x="902.931" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 902.931 570)">mt_push_only_t2</text>
+<rect x="922.69" y="375.776" width="7.93103" height="174.224" fill="#e76f51"/>
+<text x="926.655" y="369.776" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">124.6</text>
+<rect x="938.621" y="381.375" width="7.93103" height="168.625" fill="#2a9d8f"/>
+<text x="942.586" y="375.375" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">120.6</text>
+<rect x="954.552" y="339.663" width="7.93103" height="210.337" fill="#6a4c93"/>
+<text x="958.517" y="333.663" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">150.4</text>
+<text x="942.586" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 942.586 570)">mt_push_only_t4</text>
+<rect x="962.345" y="113.517" width="7.93103" height="436.483" fill="#e76f51"/>
+<text x="966.31" y="107.517" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">312.1</text>
+<rect x="978.276" y="256.836" width="7.93103" height="293.164" fill="#2a9d8f"/>
+<text x="982.241" y="250.836" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">209.6</text>
+<rect x="994.207" y="175.014" width="7.93103" height="374.986" fill="#6a4c93"/>
+<text x="998.172" y="169.014" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">268.1</text>
+<text x="982.241" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 982.241 570)">mt_push_only_t8</text>
+<rect x="1002" y="514.891" width="7.93103" height="35.1088" fill="#e76f51"/>
+<text x="1005.97" y="508.891" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">25.10</text>
+<rect x="1017.93" y="507.906" width="7.93103" height="42.0936" fill="#2a9d8f"/>
+<text x="1021.9" y="501.906" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">30.10</text>
+<rect x="1033.86" y="509.621" width="7.93103" height="40.3791" fill="#6a4c93"/>
+<text x="1037.83" y="503.621" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">28.87</text>
+<text x="1021.9" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 1021.9 570)">pop</text>
+<rect x="1041.66" y="483.184" width="7.93103" height="66.8157" fill="#e76f51"/>
+<text x="1045.62" y="477.184" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">47.77</text>
+<rect x="1057.59" y="526.493" width="7.93103" height="23.507" fill="#2a9d8f"/>
+<text x="1061.55" y="520.493" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">16.81</text>
+<rect x="1073.52" y="503.94" width="7.93103" height="46.0603" fill="#6a4c93"/>
+<text x="1077.48" y="497.94" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">32.93</text>
+<text x="1061.55" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 1061.55 570)">push_copy</text>
+<rect x="1081.31" y="506.981" width="7.93103" height="43.0192" fill="#e76f51"/>
+<text x="1085.28" y="500.981" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">30.76</text>
+<rect x="1097.24" y="528.905" width="7.93103" height="21.0952" fill="#2a9d8f"/>
+<text x="1101.21" y="522.905" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">15.08</text>
+<rect x="1113.17" y="504.375" width="7.93103" height="45.6254" fill="#6a4c93"/>
+<text x="1117.14" y="498.375" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">32.62</text>
+<text x="1101.21" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 1101.21 570)">push_move</text>
+<rect x="1128.93" y="518.353" width="7.93103" height="31.6474" fill="#e76f51"/>
+<text x="1132.9" y="512.353" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">22.63</text>
+<rect x="1144.86" y="548.378" width="7.93103" height="1.62186" fill="#2a9d8f"/>
+<text x="1148.83" y="542.378" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">1.16</text>
+<text x="1140.86" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 1140.86 570)">back</text>
+<rect x="1168.59" y="518.673" width="7.93103" height="31.3268" fill="#e76f51"/>
+<text x="1172.55" y="512.673" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">22.40</text>
+<rect x="1184.52" y="546.627" width="7.93103" height="3.37344" fill="#2a9d8f"/>
+<text x="1188.48" y="540.627" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">2.41</text>
+<text x="1180.52" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 1180.52 570)">front</text>
+<rect x="1208.24" y="522.216" width="7.93103" height="27.7845" fill="#e76f51"/>
+<text x="1212.21" y="516.216" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">19.87</text>
+<rect x="1224.17" y="549.618" width="7.93103" height="0.381892" fill="#2a9d8f"/>
+<text x="1228.14" y="543.618" text-anchor="middle" font-size="10" font-family="Menlo, monospace" fill="#222222">0.27</text>
+<text x="1220.17" y="570" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222" transform="rotate(28 1220.17 570)">size</text>
+<rect x="720" y="48" width="16" height="16" fill="#e76f51"/>
+<text x="744" y="60" font-size="14" font-family="Menlo, monospace" fill="#222222">ringbuffer</text>
+<rect x="890" y="48" width="16" height="16" fill="#2a9d8f"/>
+<text x="914" y="60" font-size="14" font-family="Menlo, monospace" fill="#222222">queue</text>
+<rect x="1060" y="48" width="16" height="16" fill="#6a4c93"/>
+<text x="1084" y="60" font-size="14" font-family="Menlo, monospace" fill="#222222">BoostQueue</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+<text x="640" y="40" text-anchor="middle" font-size="26" font-family="Menlo, monospace" fill="#111111">queue Specialized Multithread Throughput (push_only, average ops/sec)</text>
+<text x="28" y="355" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222222" transform="rotate(-90 28 355)">ops/sec</text>
+<text x="555" y="708" text-anchor="middle" font-size="13" font-family="Menlo, monospace" fill="#222222">threads</text>
+<line x1="90" y1="630" x2="1020" y2="630" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="634" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">0.00</text>
+<line x1="90" y1="520" x2="1020" y2="520" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="524" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">2937447.4</text>
+<line x1="90" y1="410" x2="1020" y2="410" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="414" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">5874894.9</text>
+<line x1="90" y1="300" x2="1020" y2="300" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="304" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">8812342.3</text>
+<line x1="90" y1="190" x2="1020" y2="190" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="194" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">11749789.8</text>
+<line x1="90" y1="80" x2="1020" y2="80" stroke="#e0e0e0" stroke-width="1"/>
+<text x="80" y="84" text-anchor="end" font-size="12" font-family="Menlo, monospace" fill="#444444">14687237.2</text>
+<line x1="90" y1="80" x2="90" y2="630" stroke="#222222" stroke-width="2"/>
+<line x1="90" y1="630" x2="1020" y2="630" stroke="#222222" stroke-width="2"/>
+<text x="90" y="650" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222">2t</text>
+<text x="555" y="650" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222">4t</text>
+<text x="1020" y="650" text-anchor="middle" font-size="12" font-family="Menlo, monospace" fill="#222222">8t</text>
+<circle cx="90" cy="272.594" r="3.5" fill="#1d3557"/>
+<circle cx="555" cy="380.029" r="3.5" fill="#1d3557"/>
+<circle cx="1020" cy="490.332" r="3.5" fill="#1d3557"/>
+<polyline points="90.000000,272.594297 555.000000,380.029101 1020.000000,490.331777 " fill="none" stroke="#1d3557" stroke-width="2.5"/>
+<rect x="1040" y="80" width="14" height="14" fill="#1d3557"/>
+<text x="1060" y="90" font-size="12" font-family="Menlo, monospace" fill="#222222">BoostQueue</text>
+<circle cx="90" cy="202.035" r="3.5" fill="#e76f51"/>
+<circle cx="555" cy="315.882" r="3.5" fill="#e76f51"/>
+<circle cx="1020" cy="451.168" r="3.5" fill="#e76f51"/>
+<polyline points="90.000000,202.034735 555.000000,315.882060 1020.000000,451.167529 " fill="none" stroke="#e76f51" stroke-width="2.5"/>
+<rect x="1040" y="104" width="14" height="14" fill="#e76f51"/>
+<text x="1060" y="114" font-size="12" font-family="Menlo, monospace" fill="#222222">queue</text>
+<circle cx="90" cy="80" r="3.5" fill="#2a9d8f"/>
+<circle cx="555" cy="328.898" r="3.5" fill="#2a9d8f"/>
+<circle cx="1020" cy="509.87" r="3.5" fill="#2a9d8f"/>
+<polyline points="90.000000,80.000000 555.000000,328.897990 1020.000000,509.870066 " fill="none" stroke="#2a9d8f" stroke-width="2.5"/>
+<rect x="1040" y="128" width="14" height="14" fill="#2a9d8f"/>
+<text x="1060" y="138" font-size="12" font-family="Menlo, monospace" fill="#222222">ringbuffer</text>
+</svg>
