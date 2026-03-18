@@ -8,6 +8,114 @@ After reading [*The Art of Writing Efficient Programs*](https://www.amazon.com/A
 
 Thus, these data structures are not portable and are proprietary to [Apple ARM64](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms).
 
+## Consumer Usage
+
+### Option 1: add_subdirectory (local checkout)
+
+```cmake
+add_executable(my_app main.cpp)
+add_subdirectory(path/to/Seraph)
+target_link_libraries(my_app PRIVATE seraph::seraph)
+target_compile_features(my_app PRIVATE cxx_std_23)
+```
+
+### Option 2: FetchContent (remote source)
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+  seraph
+  GIT_REPOSITORY https://github.com/<you>/Seraph.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(seraph)
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE seraph::seraph)
+target_compile_features(my_app PRIVATE cxx_std_23)
+```
+
+### Option 3: Installed package (find_package)
+
+Install Seraph:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cmake --install build --prefix "$HOME/.local"
+```
+
+Use in your project:
+
+```cmake
+find_package(seraph CONFIG REQUIRED)
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE seraph::seraph)
+target_compile_features(my_app PRIVATE cxx_std_23)
+```
+
+## Build Locally
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Usage Examples
+
+Queue:
+
+```cpp
+#include "seraph/queue.hpp"
+
+int main() {
+    seraph::queue<int> q;
+    q.push(1);
+    q.emplace(2);
+
+    if (auto value = q.pop()) {
+        // value == 1
+    }
+}
+```
+
+Stack:
+
+```cpp
+#include "seraph/stack.hpp"
+
+int main() {
+    seraph::stack<int> s;
+    s.push(10);
+    s.emplace(20);
+
+    if (auto top = s.top()) {
+        // top == 20
+    }
+
+    s.pop();
+}
+```
+
+RingBuffer:
+
+```cpp
+#include "seraph/ringbuffer.hpp"
+
+int main() {
+    seraph::RingBuffer<int> rb(1024);
+    rb.push(7);
+    rb.emplace(9);
+
+    if (auto back = rb.back()) {
+        // back == 9
+    }
+
+    rb.pop();
+}
+```
+
+
 ## Design Notes
 
 The specs of the machine (Macbook M4 Pro) optimized for are as follows:
@@ -76,65 +184,3 @@ Specialized multithread throughput (ops/sec), Release build, 2/4/8 threads, 5 re
 - `cmake --build build --target seraph_queue_perf seraph_stack_perf`
 - `./build/seraph_queue_perf`
 - `./build/seraph_stack_perf`
-
-## Usage Examples
-
-Queue:
-
-```cpp
-// [Minimal queue example]
-```
-
-Stack:
-
-```cpp
-// [Minimal stack example]
-```
-
-
-## Build Locally
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-## Consumer Usage
-
-### Option 1: add_subdirectory (local checkout)
-
-```cmake
-add_subdirectory(path/to/Seraph)
-target_link_libraries(my_app PRIVATE seraph::seraph)
-```
-
-### Option 2: FetchContent (remote source)
-
-```cmake
-include(FetchContent)
-FetchContent_Declare(
-  seraph
-  GIT_REPOSITORY https://github.com/<you>/Seraph.git
-  GIT_TAG main
-)
-FetchContent_MakeAvailable(seraph)
-target_link_libraries(my_app PRIVATE seraph::seraph)
-```
-
-### Option 3: Installed package (find_package)
-
-Install Seraph:
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-cmake --install build --prefix "$HOME/.local"
-```
-
-Use in another project:
-
-```cmake
-find_package(seraph CONFIG REQUIRED)
-target_link_libraries(my_app PRIVATE seraph::seraph)
-```
