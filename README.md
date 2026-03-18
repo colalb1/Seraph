@@ -15,24 +15,7 @@ Thus, these data structures are not portable and are proprietary to [Apple ARM64
 - [Feature 3: concrete capability]
 - [Feature 4: concrete capability]
 
-## Design Highlights
-
-- [Design choice 1 and why it exists]
-- [Design choice 2 and why it exists]
-- [Concurrency or memory-model note]
-
-## Implementation Notes
-
-- `queue` is a Michael–Scott lock‑free list; linearizability is enforced via CAS on `head/tail` and hazard pointers provide a safe memory‑reclamation scheme under the C++ atomics model.
-- `stack` is a two‑phase system: a mutexed vector for low contention, then a Treiber‑style CAS list after a contention‑streak threshold (a simple stochastic estimator that avoids premature promotion).
-- `RingBuffer` uses power‑of‑two capacity with sequence numbers as a monotone counter on `Z`, so slot state is tracked by congruence classes; a mirrored index set (size `2N`) makes `back()` a linear scan without modular wrap branches.
-- Cache‑line alignment reduces false sharing; per‑slot reader counts create a bounded critical section for peeks so `front/back` remain wait‑free with respect to the pop’s move/reset.
-
-## Correctness & Safety
-
-- [Testing strategy or invariants]
-- [Sanitizers / tooling]
-- [Known constraints]
+## Design Notes
 
 The specs of the machine (Macbook M4 Pro) optimized for are as follows:
 
@@ -41,6 +24,26 @@ The specs of the machine (Macbook M4 Pro) optimized for are as follows:
 - **L2 cache size**: 4 MB
 
 The structures are tuned for 4-thread workloads.
+
+Cache‑line alignment reduces false sharing; per‑slot reader counts create a bounded critical section for peeks so `front/back` remain wait‑free with respect to `pop`’s move/reset.
+
+### `stack`
+
+A two‑phase system: a mutexed spinlock vector for low contention, then a [Treiber‑style](https://en.wikipedia.org/wiki/Treiber_stack) CAS list after surpassing a contention threshold.
+
+### `queue`
+
+A [Michael–Scott lock‑free queue](https://people.csail.mit.edu/shanir/publications/FIFO_Queues.pdf). Linearizability is enforced via compare-and-swap (CAS) on the `head/tail`. Hazard pointers provide a safe memory‑reclamation scheme under the C++ atomics model.
+
+### `ringbuffer`
+
+Uses a power‑of‑two capacity $N$, so the enqueue/dequeue positions advance monotonically in $\mathbb{Z}$, and each slot’s state is determined by the position’s congruence class modulo $N$. A mirrored index array of length $2N$ maps $[0, ..., 2N)$ to the same $N$ slots, so `back()` can scan linearly across a wrapped region without any branch-modular wrap‑around fixes.
+
+## Correctness & Safety
+
+- [Testing strategy or invariants]
+- [Sanitizers / tooling]
+- [Known constraints]
 
 ## Performance Highlights
 
