@@ -150,7 +150,7 @@ namespace {
         }
 
       private:
-        seraph::RingBuffer<int> data_;
+        seraph::ringbuffer<int> data_;
     };
 
 #if SERAPH_HAS_BOOST_LOCKFREE_QUEUE

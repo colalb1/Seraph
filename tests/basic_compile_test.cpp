@@ -86,7 +86,7 @@ int main() {
         return 1;
     }
 
-    seraph::RingBuffer<int> ringbuffer(8);
+    seraph::ringbuffer<int> ringbuffer(8);
     if (!ringbuffer.empty()) {
         return 1;
     }
@@ -122,6 +122,5 @@ int main() {
         return 1;
     }
 
-    // TODO: Replace this smoke test with structured unit tests GoogleTest
     return 0;
 }
