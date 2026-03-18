@@ -122,6 +122,5 @@ int main() {
         return 1;
     }
 
-    // TODO: Replace this smoke test with structured unit tests GoogleTest
     return 0;
 }
