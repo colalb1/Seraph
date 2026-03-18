@@ -66,9 +66,9 @@ Specialized multithread throughput (ops/sec), Release build, 2/4/8 threads, 5 re
 
 ## Performance Summary
 
-**Queue**: Seraph `queue` leads pop‑only throughput across 2/4/8 threads (~23.8M / 9.9M / 4.16M ops/sec), while push‑only is led by `ringbuffer` at 2 threads (~14.7M ops/sec) and by `queue` at 4/8 threads (~8.4M / 4.8M ops/sec).
+**Queue**: Seraph `queue` leads "pop‑only" throughput across 2/4/8 threads (~23.8M / 9.9M / 4.16M ops/sec). "push‑only" is led by `ringbuffer` at 2 threads (~14.7M ops/sec) and by `queue` at 4 and 8 threads (~8.4M / 4.8M ops/sec, respectively).
 
-**Stack**: Seraph is competitive with Boost; `stack` leads at 4 threads for both push/pop (~9.1M / 8.9M ops/sec), while Boost edges at 2 threads and is slightly ahead at 8 threads.
+**Stack**: Seraph is competitive with Boost: `stack` leads at 4 threads for both push/pop (~9.1M / 8.9M ops/sec), while Boost wins at 2 threads and is slightly ahead at 8 threads.
 
 ## Reproduce Results
 
