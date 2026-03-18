@@ -16,7 +16,7 @@ The specs of the machine (Macbook M4 Pro) optimized for are as follows:
 - **L1 data cache size**: 64 KB
 - **L2 cache size**: 4 MB
 
-The structures are tuned for 4-thread workloads.
+The structures are tuned for 4-thread workloads. I also tested 2 and 8-thread workloads out of curiosity.
 
 Cache‑line alignment reduces false sharing; per‑slot reader counts create a bounded critical section for peeks so `front/back` remain wait‑free with respect to `pop`’s move/reset.
 
