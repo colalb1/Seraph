@@ -4,7 +4,7 @@ Seraph is a header-only C++ data-structure library for Apple ARM64.
 
 ## Why does this exist?
 
-After reading [*The Art of Writing Efficient Programs*](https://www.amazon.com/Art-Writing-Efficient-Programs-optimizations/dp/1800208111) and [*C++ Templates: The Complete Guide*](https://www.amazon.com/C-Templates-Complete-Guide-2nd/dp/0321714121), I wanted to put the lessons into practice by building (basic) concurrent data structures and explore the difficulty of outperforming a [portable high-performance package](https://www.boost.org/doc/libs/latest/doc/html/heap/data_structures.html) when targeting a particular architecture.
+After reading [*The Art of Writing Efficient Programs*](https://www.amazon.com/Art-Writing-Efficient-Programs-optimizations/dp/1800208111) and [*C++ Templates: The Complete Guide*](https://www.amazon.com/C-Templates-Complete-Guide-2nd/dp/0321714121), I wanted to put the lessons into practice by building (basic) concurrent data structures and exploring the difficulty of outperforming a [portable high-performance package](https://www.boost.org/doc/libs/latest/doc/html/heap/data_structures.html) when targeting a particular architecture.
 
 Thus, these data structures are not portable and are proprietary to [Apple ARM64](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms).
 
@@ -41,14 +41,6 @@ The specs of the machine (Macbook M4 Pro) optimized for are as follows:
 - **L2 cache size**: 4 MB
 
 The structures are tuned for 4-thread workloads.
-
-## Project Layout
-
-- `include/seraph/stack.hpp`: stack API skeleton
-- `include/seraph/queue.hpp`: queue API skeleton
-- `tests/basic_compile_test.cpp`: basic compile/link smoke test
-- `src/`: implementation files (minimal scaffold)
-- `VERSION`: package semantic version (`MAJOR.MINOR.PATCH`)
 
 ## Performance Highlights
 
@@ -88,12 +80,6 @@ Stack: Seraph is competitive with Boost—`stack` leads at 4 threads for both pu
 - [Portability or architecture constraints]
 - [Performance caveats]
 - [Concurrency or workload assumptions]
-
-## Roadmap
-
-- [Short-term item]
-- [Medium-term item]
-- [Long-term item]
 
 ## Usage Examples
 
@@ -162,7 +148,3 @@ target_link_libraries(my_app PRIVATE seraph::seraph)
 ```bash
 cmake --build build --target format
 ```
-
-## Notes
-
-- TODO markers in headers and tests identify the next implementation steps.
