@@ -139,7 +139,7 @@ namespace {
             return {};
         }
 
-        // RingBuffer front/back are best-effort. Returning nullopt is always allowed.
+        // ringbuffer front/back are best-effort. Returning nullopt is always allowed.
         [[nodiscard]] static auto apply(const OpRecord& operation, State& state) -> bool {
             switch (operation.kind) {
             case OpKind::push:
@@ -484,7 +484,7 @@ namespace {
             return ring_.back();
         }
 
-        // RingBuffer has no top(); keep an explicit stub so shared test code compiles cleanly.
+        // ringbuffer has no top(); keep an explicit stub so shared test code compiles cleanly.
         [[nodiscard]] static auto top() -> std::optional<int> {
             return std::nullopt;
         }
@@ -498,7 +498,7 @@ namespace {
         }
 
       private:
-        seraph::RingBuffer<int> ring_;
+        seraph::ringbuffer<int> ring_;
     };
 
     auto run_sequential_sanity() -> bool {
@@ -796,7 +796,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Targeted full/empty contention scenarios for RingBuffer with a tiny capacity.
+    // Targeted full/empty contention scenarios for ringbuffer with a tiny capacity.
     {
         std::vector<std::vector<PlannedOp>> plan = {
                 {

@@ -78,13 +78,13 @@ int main() {
 }
 ```
 
-RingBuffer:
+ringbuffer:
 
 ```cpp
 #include "seraph/ringbuffer.hpp"
 
 int main() {
-    seraph::RingBuffer<int> rb(1024);
+    seraph::ringbuffer<int> rb(1024);
     rb.push(7);
     rb.emplace(9);
 

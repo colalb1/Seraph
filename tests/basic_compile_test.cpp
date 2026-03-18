@@ -86,7 +86,7 @@ int main() {
         return 1;
     }
 
-    seraph::RingBuffer<int> ringbuffer(8);
+    seraph::ringbuffer<int> ringbuffer(8);
     if (!ringbuffer.empty()) {
         return 1;
     }

@@ -15,7 +15,7 @@
 #include <vector>
 
 namespace seraph {
-    template <typename T> class RingBuffer {
+    template <typename T> class ringbuffer {
       private:
 #if defined(__cpp_lib_hardware_interference_size)
         static constexpr size_t k_destructive_interference_size{
@@ -61,13 +61,13 @@ namespace seraph {
 
         [[nodiscard]] static auto normalize_capacity(size_t requested) -> size_t {
             if (requested == 0) {
-                throw std::invalid_argument("RingBuffer capacity must be > 0.");
+                throw std::invalid_argument("ringbuffer capacity must be > 0.");
             }
 
             const size_t capacity(std::bit_ceil(requested));
 
             if (capacity > (std::numeric_limits<size_t>::max() >> 1)) {
-                throw std::length_error("RingBuffer capacity is too large.");
+                throw std::length_error("ringbuffer capacity is too large.");
             }
 
             return capacity;
@@ -170,7 +170,7 @@ namespace seraph {
         alignas(k_destructive_interference_size) Cursor size_{};
 
       public:
-        explicit RingBuffer(size_t data_size)
+        explicit ringbuffer(size_t data_size)
             : capacity_(normalize_capacity(data_size)), capacity_mask_(capacity_ - 1),
               mirrored_mask_((capacity_ << 1) - 1), slots_(capacity_),
               mirrored_slots_(capacity_ << 1) {
@@ -182,12 +182,12 @@ namespace seraph {
             }
         }
 
-        ~RingBuffer() = default;
+        ~ringbuffer() = default;
 
-        RingBuffer(const RingBuffer&) = delete;
-        RingBuffer& operator=(const RingBuffer&) = delete;
-        RingBuffer(RingBuffer&&) = delete;
-        RingBuffer& operator=(RingBuffer&&) = delete;
+        ringbuffer(const ringbuffer&) = delete;
+        ringbuffer& operator=(const ringbuffer&) = delete;
+        ringbuffer(ringbuffer&&) = delete;
+        ringbuffer& operator=(ringbuffer&&) = delete;
 
         void push(const T& value) {
             emplace(value);
