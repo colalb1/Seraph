@@ -122,9 +122,3 @@ Use in another project:
 find_package(seraph CONFIG REQUIRED)
 target_link_libraries(my_app PRIVATE seraph::seraph)
 ```
-
-## Formatting
-
-```bash
-cmake --build build --target format
-```
