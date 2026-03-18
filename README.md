@@ -10,7 +10,7 @@ Thus, these data structures are not portable and are proprietary to [Apple ARM64
 
 ## Consumer Usage
 
-### Option 1: add_subdirectory (local checkout)
+### Local Checkout
 
 ```cmake
 add_executable(my_app main.cpp)
@@ -19,35 +19,16 @@ target_link_libraries(my_app PRIVATE seraph::seraph)
 target_compile_features(my_app PRIVATE cxx_std_23)
 ```
 
-### Option 2: FetchContent (remote source)
+### Remote Source
 
 ```cmake
 include(FetchContent)
 FetchContent_Declare(
   seraph
-  GIT_REPOSITORY https://github.com/<you>/Seraph.git
+  GIT_REPOSITORY https://github.com/colalb1/Seraph.git
   GIT_TAG main
 )
 FetchContent_MakeAvailable(seraph)
-add_executable(my_app main.cpp)
-target_link_libraries(my_app PRIVATE seraph::seraph)
-target_compile_features(my_app PRIVATE cxx_std_23)
-```
-
-### Option 3: Installed package (find_package)
-
-Install Seraph:
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-cmake --install build --prefix "$HOME/.local"
-```
-
-Use in your project:
-
-```cmake
-find_package(seraph CONFIG REQUIRED)
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE seraph::seraph)
 target_compile_features(my_app PRIVATE cxx_std_23)
