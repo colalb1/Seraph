@@ -157,7 +157,7 @@ Specialized multithread throughput (ops/sec), Release build, 2/4/8 threads, 5 re
 
 ## Reproduce Results
 
-- `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release`
-- `cmake --build build --target seraph_queue_perf seraph_stack_perf`
-- `./build/seraph_queue_perf`
-- `./build/seraph_stack_perf`
+```shell
+./build/seraph_queue_perf
+./build/seraph_stack_perf
+```
