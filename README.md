@@ -37,7 +37,7 @@ target_compile_features(my_app PRIVATE cxx_std_23)
 ## Build Locally
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
@@ -69,11 +69,7 @@ int main() {
     seraph::stack<int> s;
     s.push(10);
     s.emplace(20);
-
-    if (auto top = s.top()) {
-        // top == 20
-    }
-
+    s.top();
     s.pop();
 }
 ```
@@ -89,7 +85,7 @@ int main() {
     rb.emplace(9);
 
     if (auto back = rb.back()) {
-        // back == 9
+        // do
     }
 
     rb.pop();
