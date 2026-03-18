@@ -34,9 +34,25 @@ Uses a power‑of‑two capacity $N$, so the enqueue/dequeue positions advance m
 
 ## Correctness & Safety
 
-- [Testing strategy or invariants]
-- [Sanitizers / tooling]
-- [Known constraints]
+Publication uses release stores and consumption uses acquire loads on the per‑node/per‑slot state (`next`/`sequence`), ensuring payload visibility once a state transition is observed. Cursor/size counters are updated with relaxed atomics because they do not carry payload visibility. Correctness relies on the release/acquire edges. Hazard pointers and per‑slot reader counts prevent reclamation or mutation during a user read.
+
+### `stack`
+In vector mode, a spinlock serializes operations. Promotion to CAS mode is guarded by a `shared_mutex` so no operation straddles both modes, and all elements are transferred exactly once.
+
+In CAS mode, `push` and `pop` are Treiber‑style and linearize at successful CAS on `cas_head_`. Hazard pointers prevent use‑after‑free during concurrent pops/peeks.
+
+### `queue`
+
+`push` linearizes when the new node is linked via CAS on `tail->next`, and `pop` linearizes when `head_` is advanced via CAS.
+
+`front`/`back` are best‑effort peeks under hazard protection, and `size()` is an approximate counter under concurrency.
+
+### `ringbuffer`
+A slot is producer‑ready when `sequence == p`, consumer‑ready at `sequence == p + 1`, and recycled at `sequence == p + N`.
+
+`push` publishes by writing the payload then storing `sequence = p + 1`, while `pop` claims via CAS on `dequeue_pos_` and marks the slot busy during move/reset.
+
+`front`/`back` are observational helpers that attempt a stable copy; they are not linearizable snapshots.
 
 ## Performance Highlights
 
