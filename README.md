@@ -50,19 +50,9 @@ Specialized multithread throughput (ops/sec), Release build, 2/4/8 threads, 5 re
 
 ## Performance Summary
 
-Queue: Seraph `queue` leads pop‑only throughput across 2/4/8 threads (~23.8M / 9.9M / 4.16M ops/sec), while push‑only is led by `ringbuffer` at 2 threads (~14.7M ops/sec) and by `queue` at 4/8 threads (~8.4M / 4.8M ops/sec).
+**Queue**: Seraph `queue` leads pop‑only throughput across 2/4/8 threads (~23.8M / 9.9M / 4.16M ops/sec), while push‑only is led by `ringbuffer` at 2 threads (~14.7M ops/sec) and by `queue` at 4/8 threads (~8.4M / 4.8M ops/sec).
 
-Stack: Seraph is competitive with Boost—`stack` leads at 4 threads for both push/pop (~9.1M / 8.9M ops/sec), while Boost edges at 2 threads and is slightly ahead at 8 threads.
-
-## Benchmark Methodology
-
-- Build: Release (`-DCMAKE_BUILD_TYPE=Release`)
-- Threads: 2, 4, 8
-- Repeats: 5
-- Queue ops/thread: 200k
-- Stack ops/thread: 150k
-- Warm-up: none (each repeat runs without an explicit warm-up phase)
-- Boost comparisons: enabled when Boost headers are found (CMake `find_package(Boost)` or `/opt/homebrew/include/boost`)
+**Stack**: Seraph is competitive with Boost; `stack` leads at 4 threads for both push/pop (~9.1M / 8.9M ops/sec), while Boost edges at 2 threads and is slightly ahead at 8 threads.
 
 ## Reproduce Results
 
@@ -70,12 +60,6 @@ Stack: Seraph is competitive with Boost—`stack` leads at 4 threads for both pu
 - `cmake --build build --target seraph_queue_perf seraph_stack_perf`
 - `./build/seraph_queue_perf`
 - `./build/seraph_stack_perf`
-
-## Limitations
-
-- [Portability or architecture constraints]
-- [Performance caveats]
-- [Concurrency or workload assumptions]
 
 ## Usage Examples
 
