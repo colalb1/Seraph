@@ -6,7 +6,7 @@ Seraph is a header-only C++ data-structure library for Apple ARM64.
 
 After reading [*The Art of Writing Efficient Programs*](https://www.amazon.com/Art-Writing-Efficient-Programs-optimizations/dp/1800208111) and [*C++ Templates: The Complete Guide*](https://www.amazon.com/C-Templates-Complete-Guide-2nd/dp/0321714121), I wanted to put the lessons into practice by building (basic) concurrent data structures and exploring the difficulty of outperforming a [portable high-performance package](https://www.boost.org/doc/libs/latest/doc/html/heap/data_structures.html) when targeting a particular architecture.
 
-Thus, these data structures are not portable and are proprietary to [Apple ARM64](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms).
+Thus, these data structures are not portable and are targeted for [Apple ARM64](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms) silicon only.
 
 ## Consumer Usage
 
@@ -69,7 +69,11 @@ int main() {
     seraph::stack<int> s;
     s.push(10);
     s.emplace(20);
-    s.top();
+
+    if (auto top = s.top()) {
+        // top == 20
+    }
+
     s.pop();
 }
 ```
@@ -85,7 +89,7 @@ int main() {
     rb.emplace(9);
 
     if (auto back = rb.back()) {
-        // do
+        // back == 9
     }
 
     rb.pop();
