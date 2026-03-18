@@ -8,13 +8,6 @@ After reading [*The Art of Writing Efficient Programs*](https://www.amazon.com/A
 
 Thus, these data structures are not portable and are proprietary to [Apple ARM64](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms).
 
-## Key Features
-
-- [Feature 1: concrete capability]
-- [Feature 2: concrete capability]
-- [Feature 3: concrete capability]
-- [Feature 4: concrete capability]
-
 ## Design Notes
 
 The specs of the machine (Macbook M4 Pro) optimized for are as follows:
