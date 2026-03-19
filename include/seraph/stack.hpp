@@ -1,6 +1,6 @@
 #pragma once
 
-#include "locks.hpp"
+#include "seraph/detail/locks.hpp"
 
 #include <algorithm>
 #include <array>
@@ -309,7 +309,7 @@ namespace seraph {
 
             std::vector<T> transfer_buffer;
             {
-                SpinlockGuard guard(spin_lock_);
+                detail::SpinlockGuard guard(spin_lock_);
                 transfer_buffer = std::move(spin_data_);
                 spin_data_.clear();
             }
@@ -323,7 +323,7 @@ namespace seraph {
 
         mutable std::shared_mutex mode_mutex_;
 
-        alignas(k_destructive_interference_size) mutable Spinlock spin_lock_;
+        alignas(k_destructive_interference_size) mutable detail::Spinlock spin_lock_;
         std::vector<T> spin_data_;
 
         alignas(k_destructive_interference_size) std::atomic<Node*> cas_head_{nullptr};
@@ -373,7 +373,7 @@ namespace seraph {
                 return;
             }
 
-            SpinlockGuard guard(spin_lock_);
+            detail::SpinlockGuard guard(spin_lock_);
             spin_data_.reserve(n);
         }
 
@@ -390,7 +390,7 @@ namespace seraph {
                 }
 
                 T temp(value);
-                SpinlockGuard guard(spin_lock_);
+                detail::SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(temp));
                 return;
             }
@@ -411,7 +411,7 @@ namespace seraph {
                     return;
                 }
 
-                SpinlockGuard guard(spin_lock_);
+                detail::SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(value));
                 return;
             }
@@ -432,7 +432,7 @@ namespace seraph {
                 }
 
                 T temp(std::forward<Args>(args)...);
-                SpinlockGuard guard(spin_lock_);
+                detail::SpinlockGuard guard(spin_lock_);
                 spin_data_.push_back(std::move(temp));
 
                 return;
@@ -452,7 +452,7 @@ namespace seraph {
                     return cas_pop_impl();
                 }
 
-                SpinlockGuard guard(spin_lock_);
+                detail::SpinlockGuard guard(spin_lock_);
 
                 if (spin_data_.empty()) {
                     return std::nullopt;
@@ -472,7 +472,7 @@ namespace seraph {
                 return cas_top_impl();
             }
 
-            SpinlockGuard guard(spin_lock_);
+            detail::SpinlockGuard guard(spin_lock_);
             if (spin_data_.empty()) {
                 return std::nullopt;
             }
@@ -486,7 +486,7 @@ namespace seraph {
                 return cas_empty_impl();
             }
 
-            SpinlockGuard guard(spin_lock_);
+            detail::SpinlockGuard guard(spin_lock_);
             return spin_data_.empty();
         }
 
@@ -496,7 +496,7 @@ namespace seraph {
                 return cas_size_impl();
             }
 
-            SpinlockGuard guard(spin_lock_);
+            detail::SpinlockGuard guard(spin_lock_);
             return spin_data_.size();
         }
 
